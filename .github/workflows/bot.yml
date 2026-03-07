@@ -1,0 +1,43 @@
+name: Video Bot
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_url:
+        description: "رابط الفيديو للنشر"
+        required: false
+      title:
+        description: "عنوان الفيديو"
+        required: false
+      location:
+        description: "مكان الفيديو"
+        required: false
+      date:
+        description: "تاريخ الفيديو"
+        required: false
+      visibility:
+        description: "متداول أو خاص"
+        required: false
+      publisher:
+        description: "اسم الناشر A أو B"
+        required: false
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements.txt
+      - run: python bot.py
+        env:
+          CLOUDINARY_URL:   ${{ secrets.CLOUDINARY_URL }}
+          FB_ACCESS_TOKEN:  ${{ secrets.FB_ACCESS_TOKEN }}
+          VIDEO_TITLE:      ${{ github.event.inputs.title }}
+          VIDEO_LOCATION:   ${{ github.event.inputs.location }}
+          VIDEO_DATE:       ${{ github.event.inputs.date }}
+          VIDEO_VISIBILITY: ${{ github.event.inputs.visibility }}
+          PUBLISHER:        ${{ github.event.inputs.publisher }}
