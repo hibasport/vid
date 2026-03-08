@@ -101,17 +101,9 @@ def render_overlay(title, location, date_str, visibility, color_hex, W, H):
     alpha_val = int(float(color_hex.split("@")[1]) * 255) if "@" in color_hex else 217
     title_bg  = (int(hex_str[0:2],16), int(hex_str[2:4],16), int(hex_str[4:6],16), alpha_val)
 
-    white  = (255, 255, 255, 255)
-    shadow = (0, 0, 0, 220)
+    white = (255, 255, 255, 255)
 
-    def draw_outlined(d, pos, text, font, color=white):
-        """رسم نص مع هالة سوداء للقراءة بدون خلفية."""
-        x, y = pos
-        for dx, dy in [(-2,-2),(2,-2),(-2,2),(2,2),(0,-2),(0,2),(-2,0),(2,0)]:
-            d.text((x+dx, y+dy), text, font=font, fill=shadow)
-        d.text((x, y), text, font=font, fill=color)
-
-    # ══ 1. المكان + التاريخ ─ أعلى اليسار، بدون خلفية ══
+    # ══ 1. المكان + التاريخ ─ أعلى اليسار، أبيض فقط بدون ظل ══
     info_sz = max(32, int(W * 0.036))
     font_i  = load_font(info_sz)
 
@@ -122,54 +114,49 @@ def render_overlay(title, location, date_str, visibility, color_hex, W, H):
     y = pad
     for line in info_lines:
         lw, lh = get_tw(draw, line, font_i)
-        draw_outlined(draw, (pad, y), line, font_i)
+        draw.text((pad, y), line, font=font_i, fill=white)
         y += lh + int(info_sz * 0.4)
 
-    # ══ 2. متداول / خاص ─ نص عمودي أقصى اليسار، بدون خلفية ══
+    # ══ 2. متداول / خاص ─ نص أبيض عمودي أقصى اليسار، بدون ظل ══
     if visibility:
         badge_sz = max(28, int(W * 0.032))
         font_b   = load_font(badge_sz)
         bw, bh   = get_tw(draw, visibility, font_b)
 
-        # رسم على صورة مؤقتة ثم تدوير 90°
         margin = int(badge_sz * 0.3)
         tmp_w  = bw + margin * 2
         tmp_h  = bh + margin * 2
         tmp    = Image.new("RGBA", (tmp_w, tmp_h), (0, 0, 0, 0))
         td     = ImageDraw.Draw(tmp)
-
-        vis_color = (16, 185, 129, 255) if visibility == "متداول" else (239, 68, 68, 255)
-        # ظل
-        for dx, dy in [(-2,-2),(2,-2),(-2,2),(2,2),(0,-2),(0,2),(-2,0),(2,0)]:
-            td.text((margin+dx, margin+dy), visibility, font=font_b, fill=shadow)
-        td.text((margin, margin), visibility, font=font_b, fill=vis_color)
+        td.text((margin, margin), visibility, font=font_b, fill=white)
 
         rotated = tmp.rotate(90, expand=True)
-        # وسط الفيديو، أقصى اليسار
         rx = 4
         ry = (H - rotated.height) // 2
         img.paste(rotated, (rx, ry), rotated)
 
-    # ══ 3. شريط العنوان ─ فوق منطقة GS بـ 22% ══
+    # ══ 3. شريط العنوان ─ موضع مطابق للمثال (16% من الأسفل) ══
     if title:
-        title_sz = max(40, int(W * 0.046))
-        font_t   = load_font(title_sz)
+        font_size = max(20, int(W * 0.0352))
+        font_t    = load_font(font_size)
+        pad_h     = int(W * 0.05)
+        pad_v     = int(H * 0.018)
+        bar_w     = W - int(W * 0.08)
+        usable    = bar_w - 2 * pad_h
 
-        lines  = wrap_text(draw, title, font_t, W - pad * 2)
-        line_h = int(title_sz * 1.6)
-        vpad   = int(title_sz * 0.65)
-        bar_h  = len(lines) * line_h + vpad * 2
-        bar_y  = H - bar_h - int(H * 0.22)
+        lines  = wrap_text(draw, title, font_t, usable)
+        line_h = int(font_size * 1.5)
+        bar_h  = len(lines) * line_h + 2 * pad_v
+        bar_x  = (W - bar_w) // 2
+        bar_y  = H - bar_h - int(H * 0.16)
 
-        # خلفية الشريط
-        draw.rectangle([0, bar_y, W, bar_y + bar_h], fill=title_bg)
+        draw.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], fill=title_bg)
 
         for i, line in enumerate(lines):
             lw, _ = get_tw(draw, line, font_t)
-            tx    = (W - lw) // 2
-            ty    = bar_y + vpad + i * line_h
-            # ظل خفيف
-            draw.text((tx+2, ty+2), line, font=font_t, fill=(0,0,0,100))
+            tx    = bar_x + (bar_w - lw) // 2
+            ty    = bar_y + pad_v + i * line_h
+            draw.text((tx+2, ty+2), line, font=font_t, fill=(0,0,0,110))
             draw.text((tx,   ty),   line, font=font_t, fill=white)
 
     out = "/tmp/full_overlay.png"
