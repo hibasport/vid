@@ -56,10 +56,9 @@ jobs:
             cloudinary \
             requests \
             Pillow \
-            arabic-reshaper \
             python-bidi
 
-      - name: Download Arabic font
+      - name: Download Montserrat-Arabic font
         run: |
           wget -q -O Montserrat-Arabic-Bold.ttf \
             "https://raw.githubusercontent.com/typeagm/Montserrat-Arabic/master/fonts/Montserrat-Arabic-Bold.ttf" \
@@ -72,7 +71,7 @@ jobs:
             echo "${{ secrets.FB_COOKIES }}" > /tmp/cookies.txt
             echo "✅ Cookies written"
           else
-            echo "⚠️ No FB_COOKIES secret found"
+            echo "⚠️ No FB_COOKIES secret"
           fi
 
       - name: Process and publish video
