@@ -152,35 +152,30 @@ def render_overlay(title, location, date_str, visibility, color_hex, W, H):
                 gy = gy0 + row * rsp
                 d.ellipse([gx-dot_r,gy-dot_r,gx+dot_r,gy+dot_r], fill=color)
 
-    # ── رسم كل سطر مع أيقونته على اليمين (RTL) ────────────────
+    # ── الأيقونة يسار، النص على يمينها، الكل في يسار الفيديو ──
     info_items = []
     if location: info_items.append(("location", location))
     if date_str: info_items.append(("date",     date_str))
 
-    icon_sz  = int(info_sz * 0.72)   # حجم الأيقونة
-    icon_gap = int(info_sz * 0.45)   # مسافة بين الأيقونة والنص
-    y = int(H * 0.13)                # ← أنزل قليلاً (كان 0.08)
+    icon_sz  = int(info_sz * 0.46)
+    icon_gap = int(info_sz * 0.30)
+    y = int(H * 0.13)
 
     for kind, text in info_items:
-        tw, th = get_tw(draw_perm, text, font_i)
-        lh     = th
+        tw, th  = get_tw(draw_perm, text, font_i)
+        icon_cx = pad + icon_sz            # أيقونة أقصى اليسار
+        icon_cy = y + th // 2
+        text_x  = pad + icon_sz * 2 + icon_gap   # نص على يمين الأيقونة
 
-        # موضع الأيقونة: يمين النص (RTL — pad من اليسار)
-        icon_cx = pad + icon_sz
-        icon_cy = y + lh // 2
-        text_x  = pad + icon_sz * 2 + icon_gap
-
-        # ظل النص
         draw_perm.text((text_x+2, y+2), text, font=font_i, fill=shadow)
         draw_perm.text((text_x,   y),   text, font=font_i, fill=white)
 
-        # رسم الأيقونة
         if kind == "location":
             draw_icon_location(draw_perm, icon_cx, icon_cy, icon_sz, (255,255,255,240))
         else:
             draw_icon_calendar(draw_perm, icon_cx, icon_cy, icon_sz, (255,255,255,240))
 
-        y += lh + int(info_sz * 0.55)
+        y += th + int(info_sz * 0.55)
 
     # متداول / خاص عمودي أقصى اليسار
     if visibility:
