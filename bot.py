@@ -12,7 +12,7 @@ cloudinary.config(
 )
 
 VIDEO_PUBLISHER = os.environ.get("VIDEO_PUBLISHER", "ALL").strip()
-VIDEO_URL_INPUT = os.environ.get("VIDEO_URL", "").strip()   # رابط مباشر اختياري
+VIDEO_URL_INPUT = os.environ.get("VIDEO_URL", "").strip()
 print(f"👤 {VIDEO_PUBLISHER}")
 
 
@@ -67,18 +67,18 @@ def render_title_overlay(title, color_hex, W, H):
     draw = ImageDraw.Draw(img)
 
     if title:
-        font_size = max(20, int(W * 0.042))
+        font_size = max(20, int(W * 0.042))   # خط أكبر
         font_t    = load_font(font_size)
         pad_h     = int(W * 0.05)
         pad_v     = int(H * 0.018)
-        bar_w     = W - int(W * 0.25)
+        bar_w     = W - int(W * 0.25)         # عرض 75% — لا يحجب الشاشة كلها
         usable    = bar_w - 2 * pad_h
 
         lines  = wrap_text(draw, title, font_t, usable)
         line_h = int(font_size * 1.5)
         bar_h  = len(lines) * line_h + 2 * pad_v
         bar_x  = (W - bar_w) // 2
-        bar_y  = H - bar_h - int(H * 0.32)
+        bar_y  = H - bar_h - int(H * 0.22)    # مرفوع للأعلى بعيداً عن الفوتر
 
         draw.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], fill=title_bg)
         for i, line in enumerate(lines):
@@ -95,7 +95,7 @@ def render_title_overlay(title, color_hex, W, H):
 
 
 # ══════════════════════════════════════════════════════════════
-#   تطبيق PNG Frame الشفاف
+#   تطبيق PNG Frame الشفاف (إطار خاص بكل publisher)
 # ══════════════════════════════════════════════════════════════
 
 def apply_png_frame(main, frame_png, out, W, H):
@@ -165,11 +165,8 @@ def fetch_latest_from_page(page_url):
     print(f"🔍 جلب آخر فيديو من: {page_url}")
 
     has_cookies = os.path.exists(COOKIES_FILE) and os.path.getsize(COOKIES_FILE) > 50
-
-    # ── المحاولات المتعددة ──────────────────────────────────────
     attempts = []
 
-    # محاولة 1: --print مع cookies
     if has_cookies:
         attempts.append({
             "label": "print+cookies",
@@ -180,7 +177,6 @@ def fetch_latest_from_page(page_url):
                     "--no-warnings", page_url]
         })
 
-    # محاولة 2: --print بدون cookies
     attempts.append({
         "label": "print-no-cookies",
         "cmd": ["yt-dlp", "--playlist-items", "1",
@@ -189,7 +185,6 @@ def fetch_latest_from_page(page_url):
                 "--no-warnings", page_url]
     })
 
-    # محاولة 3: --get-url --get-title مع cookies
     if has_cookies:
         attempts.append({
             "label": "geturl+cookies",
@@ -200,7 +195,6 @@ def fetch_latest_from_page(page_url):
                     "--no-warnings", page_url]
         })
 
-    # محاولة 4: --get-url --get-title بدون cookies
     attempts.append({
         "label": "geturl-no-cookies",
         "cmd": ["yt-dlp", "--playlist-items", "1",
@@ -209,7 +203,6 @@ def fetch_latest_from_page(page_url):
                 "--no-warnings", page_url]
     })
 
-    # محاولة 5: flat-playlist
     if has_cookies:
         attempts.append({
             "label": "flat+cookies",
@@ -264,9 +257,8 @@ def download_video(url):
         ["yt-dlp", "-o", out, "--format", "best",
          "--no-warnings", "--no-playlist", url]))
 
-    # إذا كان الرابط مباشراً (CDN) حاول wget
     if "fbcdn" in url or url.endswith(".mp4"):
-        attempts.append(("wget-direct", None))  # special
+        attempts.append(("wget-direct", None))
 
     for label, cmd in attempts:
         print(f"📥 {label}...")
@@ -358,27 +350,20 @@ def add_outro(main, outro, out, W, H):
     ok = os.path.exists(out) and os.path.getsize(out) > 1000
     print("  ✅ (concat)" if ok else "  ❌"); return ok
 
-def compress_and_upload(video_path, pub_name, title, source_url):
-    compressed = f"/tmp/compressed_{pub_name}.mp4"
-    print("  🗜️  ضغط قبل الرفع...")
-    subprocess.run(
-        ["ffmpeg", "-y", "-i", video_path,
-         "-c:v","libx264","-crf","28","-preset","fast",
-         "-c:a","aac","-b:a","128k","-movflags","+faststart", compressed],
-        capture_output=True, text=True, timeout=600
-    )
-    upload_src = compressed if (os.path.exists(compressed) and os.path.getsize(compressed)>1000) else video_path
-    mb = os.path.getsize(upload_src)/1024/1024
-    print(f"  ✅ {mb:.1f}MB")
+def upload_and_send(video_path, pub_name, title, source_url):
+    """رفع الفيديو بالجودة الأصلية بدون ضغط — الحل الرئيسي لمشكلة الجودة"""
+    mb = os.path.getsize(video_path) / 1024 / 1024
+    print(f"  📤 رفع بالجودة الأصلية — {mb:.1f}MB")
 
-    safe      = re.sub(r"[^a-z0-9]","_", pub_name.lower())
+    safe      = re.sub(r"[^a-z0-9]", "_", pub_name.lower())
     public_id = f"tmp_{safe}"
-    result    = cloudinary.uploader.upload(
-        upload_src, resource_type="video",
+
+    result = cloudinary.uploader.upload(
+        video_path, resource_type="video",
         public_id=public_id, overwrite=True,
     )
     url = result["secure_url"]
-    print(f"  ✅ {url[:70]}")
+    print(f"  ✅ رُفع: {url[:70]}")
 
     requests.post(WEBHOOK_URL, json={
         "video_url":  url,
@@ -386,16 +371,16 @@ def compress_and_upload(video_path, pub_name, title, source_url):
         "publisher":  pub_name,
         "source_url": source_url,
     }, timeout=30)
-    print(f"  📤 Webhook → {pub_name}")
+    print(f"  📡 Webhook أُرسل → {pub_name}")
 
+    # انتظر 60 ثانية ثم احذف من Cloudinary لتوفير المساحة
     time.sleep(60)
     try:
         cloudinary.uploader.destroy(public_id, resource_type="video")
-        print(f"  🗑️  حُذف — Storage = صفر")
+        print(f"  🗑️  حُذف من Cloudinary")
     except Exception as e:
         print(f"  ⚠️ فشل الحذف: {e}")
 
-    if os.path.exists(compressed): os.remove(compressed)
     return url
 
 def cleanup_pub(name):
@@ -432,8 +417,8 @@ if VIDEO_URL_INPUT:
 else:
     if not sources:
         print("❌ لا توجد sources في config.json"); exit(1)
-    source    = sources[0]
-    page_url  = source["url"]
+    source   = sources[0]
+    page_url = source["url"]
     video_url, video_title = fetch_latest_from_page(page_url)
 
 if not video_url:
@@ -464,7 +449,7 @@ for pub in target_pubs:
     print(f"\n📺 {name}")
     current = main_ready
 
-    # PNG Frame
+    # ── PNG Frame خاص بكل publisher ───────────────────────────
     frame_local = f"/tmp/frame_{name}.png"
     framed_out  = f"/tmp/framed_{name}.mp4"
     if download_from_cloudinary(pub["frame_png_id"], frame_local, resource_type="image"):
@@ -473,24 +458,24 @@ for pub in target_pubs:
     else:
         print(f"  ⚠️ PNG Frame غير متاح — سيُنشر بدونه")
 
-    # شريط العنوان
+    # ── شريط العنوان بلون خاص بكل publisher ──────────────────
     title_png  = render_title_overlay(video_title, color, W, H)
     titled_out = f"/tmp/titled_{name}.mp4"
     if apply_title_overlay(current, title_png, titled_out, dur):
         current = titled_out
 
-    # Outro
+    # ── Outro خاص بكل publisher ───────────────────────────────
     outro_in  = f"/tmp/outro_{name}.mp4"
     final_out = f"/tmp/final_{name}.mp4"
     if download_from_cloudinary(pub["outro_id"], outro_in):
         if add_outro(current, outro_in, final_out, W, H):
             current = final_out
 
-    # رفع وإرسال
+    # ── رفع وإرسال بالجودة الأصلية ────────────────────────────
     try:
-        compress_and_upload(current, name, video_title, video_url)
+        upload_and_send(current, name, video_title, video_url)
         success += 1
-        print(f"  🎉 {name} نُشر")
+        print(f"  🎉 {name} نُشر بنجاح")
     except Exception as e:
         print(f"  ❌ {name}: {e}")
 
