@@ -3,6 +3,39 @@ name: FB Video Bot — Manual
 on:
   workflow_dispatch:
     inputs:
+      video_url:
+        description: '🔗 رابط الفيديو (Facebook Reel)'
+        required: false
+        default: ''
+        type: string
+      title:
+        description: '✏️ عنوان الفيديو'
+        required: false
+        default: ''
+        type: string
+      location:
+        description: '📍 المكان'
+        required: false
+        default: ''
+        type: string
+      date:
+        description: '📅 التاريخ'
+        required: false
+        default: ''
+        type: string
+      source:
+        description: '🔍 مصدر الفيديو'
+        required: false
+        default: ''
+        type: string
+      visibility:
+        description: '🔒 نوع الفيديو'
+        required: false
+        default: 'متداول'
+        type: choice
+        options:
+          - متداول
+          - خاص
       publisher:
         description: '👤 الناشر (ALL = جميع الصفحات)'
         required: false
@@ -13,21 +46,11 @@ on:
           - m4
           - ici
           - chouf
-      video_url:
-        description: '🔗 رابط الفيديو المباشر (اختياري — إذا فارغ يُجلب تلقائياً)'
-        required: false
-        default: ''
-        type: string
-      video_title:
-        description: '✏️ عنوان الفيديو (اختياري)'
-        required: false
-        default: ''
-        type: string
 
 jobs:
   process-video:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -42,6 +65,14 @@ jobs:
         run: |
           pip install yt-dlp cloudinary requests Pillow
 
+      - name: Download Montserrat-Arabic font
+        run: |
+          if [ ! -f "Montserrat-Arabic-Bold.ttf" ]; then
+            wget -q -O Montserrat-Arabic-Bold.ttf \
+              "https://raw.githubusercontent.com/typeagm/Montserrat-Arabic/master/fonts/Montserrat-Arabic-Bold.ttf" \
+              || echo "Font not downloaded, will use system font"
+          fi
+
       - name: Write cookies file
         run: |
           if [ -n "${{ secrets.FB_COOKIES }}" ]; then
@@ -53,9 +84,13 @@ jobs:
 
       - name: Process and publish video
         env:
-          VIDEO_PUBLISHER:       ${{ github.event.inputs.publisher }}
           VIDEO_URL:             ${{ github.event.inputs.video_url }}
-          VIDEO_TITLE:           ${{ github.event.inputs.video_title }}
+          VIDEO_TITLE:           ${{ github.event.inputs.title }}
+          VIDEO_LOCATION:        ${{ github.event.inputs.location }}
+          VIDEO_DATE:            ${{ github.event.inputs.date }}
+          VIDEO_SOURCE:          ${{ github.event.inputs.source }}
+          VIDEO_VISIBILITY:      ${{ github.event.inputs.visibility }}
+          VIDEO_PUBLISHER:       ${{ github.event.inputs.publisher }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
