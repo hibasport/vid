@@ -78,7 +78,7 @@ def render_title_overlay(title, color_hex, W, H):
         line_h = int(font_size * 1.5)
         bar_h  = len(lines) * line_h + 2 * pad_v
         bar_x  = (W - bar_w) // 2
-        bar_y  = H - bar_h - int(H * 0.16)
+        bar_y  = H - bar_h - int(H * 0.32)
 
         draw.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], fill=title_bg)
         for i, line in enumerate(lines):
