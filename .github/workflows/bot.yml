@@ -13,6 +13,16 @@ on:
           - m4
           - ici
           - chouf
+      video_url:
+        description: '🔗 رابط الفيديو المباشر (اختياري — إذا فارغ يُجلب تلقائياً)'
+        required: false
+        default: ''
+        type: string
+      video_title:
+        description: '✏️ عنوان الفيديو (اختياري)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   process-video:
@@ -44,6 +54,8 @@ jobs:
       - name: Process and publish video
         env:
           VIDEO_PUBLISHER:       ${{ github.event.inputs.publisher }}
+          VIDEO_URL:             ${{ github.event.inputs.video_url }}
+          VIDEO_TITLE:           ${{ github.event.inputs.video_title }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
