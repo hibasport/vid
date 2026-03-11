@@ -96,69 +96,61 @@ def render_overlay(title, location, date_str, visibility, color_hex, W, H):
     info_sz = max(30, int(W * 0.034))
     font_i  = load_font(info_sz)
 
-    # ── دوال رسم أيقونات flat أنيقة بـ PIL (بدون emoji) ────────
-    def draw_icon_location(d, cx, cy, r, color):
-        """دبوس موقع أنيق: شكل teardrop نظيف"""
-        # الجسم العلوي — دائرة كبيرة
-        d.ellipse([cx-r, cy-r*1.1, cx+r, cy+r*0.3], fill=color)
-        # الذيل السفلي المدبّب
-        tip_y = int(cy + r * 1.6)
-        hw = int(r * 0.52)
-        base_y = int(cy + r * 0.15)
-        d.polygon([
-            (cx - hw, base_y),
-            (cx + hw, base_y),
-            (cx,      tip_y),
-        ], fill=color)
-        # ثقب دائري أبيض في المنتصف (يعطي شكل الدبوس)
-        ir = max(3, int(r * 0.42))
-        d.ellipse([cx-ir, cy-ir*1.1-int(r*0.35),
-                   cx+ir, cy+ir*0.9-int(r*0.35)],
-                  fill=(0, 0, 0, 0))
+    # ── أيقونات outline نحيفة بـ PIL (بدون emoji) ──────────────
+    import math
 
-    def draw_icon_calendar(d, cx, cy, r, color):
-        """تقويم نظيف: إطار + خط فاصل + 6 نقاط"""
-        lw   = max(2, int(r * 0.13))   # سُمك الخطوط
-        x0   = cx - r
-        x1   = cx + r
-        y0   = cy - int(r * 0.85)
-        y1   = cy + int(r * 0.95)
-        rad  = max(3, int(r * 0.2))
-        hh   = int((y1 - y0) * 0.30)  # ارتفاع الهيدر
+    def draw_icon_location(d, cx, cy, R, color):
+        """دبوس موقع outline — مثل هسبريس"""
+        lw      = max(3, int(R * 0.18))
+        head_r  = R * 0.62
+        head_cy = cy - R * 0.28
+        # الشكل الخارجي كـ polygon بنقاط كثيرة
+        pts = []
+        steps = 40
+        for i in range(steps + 1):
+            angle = math.pi + (math.pi * i / steps)
+            pts.append((cx + head_r * math.cos(angle),
+                        head_cy + head_r * math.sin(angle)))
+        tip_y  = cy + R * 0.95
+        base_y = head_cy + head_r * 0.85
+        hw     = head_r * 0.55
+        pts.append((cx + hw, base_y))
+        pts.append((cx,      tip_y))
+        pts.append((cx - hw, base_y))
+        d.polygon(pts, outline=color, width=lw)
+        # الدائرة الداخلية
+        ir = max(3, int(head_r * 0.38))
+        d.ellipse([cx-ir, head_cy-ir, cx+ir, head_cy+ir],
+                  outline=color, width=lw)
 
-        # الخلفية الكاملة
-        d.rounded_rectangle([x0, y0, x1, y1], radius=rad, fill=color)
-
-        # الهيدر الداكن (أعمق قليلاً)
-        hc = tuple(max(0, c - 40) if i < 3 else c for i, c in enumerate(color))
-        d.rounded_rectangle([x0, y0, x1, y0+hh], radius=rad, fill=hc)
-
-        # خط فاصل
-        d.line([(x0, y0+hh), (x1, y0+hh)], fill=(255,255,255,80), width=lw)
-
-        # ربطتان أعلى الهيدر
-        pk_r = max(2, int(r*0.12))
-        pk_y = y0
-        for px in [cx - int(r*0.42), cx + int(r*0.42)]:
+    def draw_icon_calendar(d, cx, cy, R, color):
+        """تقويم outline — مثل هسبريس"""
+        lw  = max(3, int(R * 0.17))
+        x0  = cx - R;   x1 = cx + R
+        y0  = cy - int(R * 0.80); y1 = cy + int(R * 0.90)
+        rad = max(3, int(R * 0.18))
+        hh  = int((y1 - y0) * 0.28)
+        # الإطار الخارجي
+        d.rounded_rectangle([x0,y0,x1,y1], radius=rad, outline=color, width=lw)
+        # خط الهيدر الفاصل
+        d.line([(x0+1, y0+hh), (x1-1, y0+hh)], fill=color, width=lw)
+        # ربطتان أعلى
+        pk_h = int(R * 0.35); pk_w = max(2, int(R * 0.11))
+        for px in [cx - int(R*0.38), cx + int(R*0.38)]:
             d.rounded_rectangle(
-                [px-pk_r, pk_y-int(pk_r*1.8), px+pk_r, pk_y+int(pk_r*0.6)],
-                radius=pk_r, fill=(255,255,255,210)
-            )
-
-        # 6 نقاط دائرية (3×2) تمثل أيام
-        dot_r  = max(2, int(r * 0.11))
-        cols   = 3
-        rows   = 2
-        gx0    = x0 + int((x1-x0)*0.17)
-        gy0    = y0 + hh + int((y1-y0-hh)*0.22)
-        col_sp = int((x1-x0)*0.63 / (cols-1))
-        row_sp = int((y1-y0-hh)*0.52)
-        for row in range(rows):
-            for col in range(cols):
-                gx = gx0 + col * col_sp
-                gy = gy0 + row * row_sp
-                d.ellipse([gx-dot_r, gy-dot_r, gx+dot_r, gy+dot_r],
-                          fill=(255,255,255,220))
+                [px-pk_w, y0-pk_h, px+pk_w, y0+int(pk_h*0.4)],
+                radius=pk_w, outline=color, width=lw)
+        # 6 نقاط مملوءة (3×2)
+        dot_r = max(2, int(R * 0.09))
+        gx0   = x0 + int((x1-x0) * 0.16)
+        gy0   = y0 + hh + int((y1-y0-hh) * 0.22)
+        csp   = int((x1-x0) * 0.62 / 2)
+        rsp   = int((y1-y0-hh) * 0.48)
+        for row in range(2):
+            for col in range(3):
+                gx = gx0 + col * csp
+                gy = gy0 + row * rsp
+                d.ellipse([gx-dot_r,gy-dot_r,gx+dot_r,gy+dot_r], fill=color)
 
     # ── رسم كل سطر مع أيقونته على اليمين (RTL) ────────────────
     info_items = []
