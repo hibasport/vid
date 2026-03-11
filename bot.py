@@ -71,7 +71,7 @@ def render_title_overlay(title, color_hex, W, H):
         font_t    = load_font(font_size)
         pad_h     = int(W * 0.05)
         pad_v     = int(H * 0.018)
-        bar_w     = W - int(W * 0.08)
+        bar_w     = W - int(W * 0.25)
         usable    = bar_w - 2 * pad_h
 
         lines  = wrap_text(draw, title, font_t, usable)
