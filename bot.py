@@ -250,7 +250,7 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
     hex_str   = color_hex.replace("0x","").replace("#","")
     pub_color = (int(hex_str[0:2],16), int(hex_str[2:4],16), int(hex_str[4:6],16), 220)
 
-    font_sz  = max(28, int(W * 0.037))
+    font_sz  = max(28, int(W * 0.035))
     font_i   = load_font(font_sz)
     icon_sz  = int(font_sz * 0.42)
     icon_gap = int(font_sz * 0.55)
