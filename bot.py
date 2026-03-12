@@ -250,7 +250,7 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
     hex_str   = color_hex.replace("0x","").replace("#","")
     pub_color = (int(hex_str[0:2],16), int(hex_str[2:4],16), int(hex_str[4:6],16), 220)
 
-    font_sz  = max(28, int(W * 0.035))
+    font_sz  = max(28, int(W * 0.034))
     font_i   = load_font(font_sz)
     icon_sz  = int(font_sz * 0.42)
     icon_gap = int(font_sz * 0.55)
@@ -294,30 +294,24 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
                 gx=gx0+col*csp; gy=gy0+row*rsp
                 d.ellipse([gx-dot_r,gy-dot_r,gx+dot_r,gy+dot_r], fill=color)
 
-    # حساب ارتفاع النصوص لتوسيط رأسي موحد
-    th_d = get_tw(draw_perm, date_str,  font_i)[1] if date_str  else 0
-    th_l = get_tw(draw_perm, location,  font_i)[1] if location  else 0
-    max_h    = max(th_d, th_l, 1)
-    center_y = info_y + max_h // 2   # المركز الرأسي المشترك للأيقونات
-
     # التاريخ يسار: [نص]  [أيقونة🗓]
     if date_str:
         tw, th = get_tw(draw_perm, date_str, font_i)
-        ty = info_y + (max_h - th) // 2
-        draw_perm.text((margin_x+2, ty+2), date_str, font=font_i, fill=shadow)
-        draw_perm.text((margin_x,   ty),   date_str, font=font_i, fill=white)
+        text_cy = info_y + th // 2   # المركز الرأسي الحقيقي للنص
+        draw_perm.text((margin_x+2, info_y+2), date_str, font=font_i, fill=shadow)
+        draw_perm.text((margin_x,   info_y),   date_str, font=font_i, fill=white)
         ic_cx = margin_x + tw + icon_gap + icon_sz
-        draw_icon_calendar(draw_perm, ic_cx, center_y, icon_sz, white)
+        draw_icon_calendar(draw_perm, ic_cx, text_cy, icon_sz, white)
 
     # المكان يمين: [نص]  [أيقونة📍]
     if location:
         tw2, th2 = get_tw(draw_perm, location, font_i)
-        ty2 = info_y + (max_h - th2) // 2
+        text_cy2 = info_y + th2 // 2   # المركز الرأسي الحقيقي للنص
         ic_cx2 = W - margin_x - icon_sz
         loc_tx  = ic_cx2 - icon_gap - tw2
-        draw_perm.text((loc_tx+2, ty2+2), location, font=font_i, fill=shadow)
-        draw_perm.text((loc_tx,   ty2),   location, font=font_i, fill=white)
-        draw_icon_location(draw_perm, ic_cx2, center_y, icon_sz, white)
+        draw_perm.text((loc_tx+2, info_y+2), location, font=font_i, fill=shadow)
+        draw_perm.text((loc_tx,   info_y),   location, font=font_i, fill=white)
+        draw_icon_location(draw_perm, ic_cx2, text_cy2, icon_sz, white)
 
     img_perm.save("/tmp/overlay_permanent.png", "PNG")
     print("✅ overlay_permanent.png (chouf2)")
@@ -380,7 +374,7 @@ def apply_png_frame(main, frame_png, out, W, H):
         subprocess.run(
             ["ffmpeg", "-y", "-threads", "2", "-i", main, "-i", frame_png,
              "-filter_complex", fc,
-             *maps, "-c:v","libx264","-c:a","copy","-preset","ultrafast", out],
+             *maps, "-c:v","libx264","-c:a","copy","-crf","18","-preset","faster", out],
             capture_output=True, text=True, timeout=600
         )
         if os.path.exists(out) and os.path.getsize(out) > 1000:
@@ -425,7 +419,7 @@ def apply_overlay(main, out, dur):
                  "-loop","1","-t",str(loop_dur),"-i", perm_png,
                  "-loop","1","-t",str(loop_dur),"-i", title_png,
                  "-filter_complex", fc,
-                 *maps, "-c:v","libx264","-c:a","copy","-preset","ultrafast","-shortest", out],
+                 *maps, "-c:v","libx264","-c:a","copy","-crf","18","-preset","faster","-shortest", out],
                 capture_output=True, text=True, timeout=600
             )
             if os.path.exists(out) and os.path.getsize(out) > 1000:
@@ -446,7 +440,7 @@ def apply_overlay(main, out, dur):
                  "-i", main,
                  "-loop","1","-t",str(loop_dur),"-i", title_png,
                  "-filter_complex", fc2,
-                 *maps, "-c:v","libx264","-c:a","copy","-preset","ultrafast","-shortest", out],
+                 *maps, "-c:v","libx264","-c:a","copy","-crf","18","-preset","faster","-shortest", out],
                 capture_output=True, text=True, timeout=600
             )
             if os.path.exists(out) and os.path.getsize(out) > 1000:
@@ -643,7 +637,7 @@ def add_outro(main, outro, out, W, H):
 
     subprocess.run(
         ["ffmpeg","-y","-threads","2","-i",main,"-i",outro,"-filter_complex",fc,
-         *maps,"-c:v","libx264","-c:a","aac","-preset","ultrafast",out],
+         *maps,"-c:v","libx264","-c:a","aac","-crf","18","-preset","faster",out],
         capture_output=True, text=True, timeout=600
     )
     if os.path.exists(out) and os.path.getsize(out) > 1000:
@@ -653,7 +647,7 @@ def add_outro(main, outro, out, W, H):
         f.write(f"file '{main}'\nfile '{outro}'\n")
     subprocess.run(
         ["ffmpeg","-y","-threads","2","-f","concat","-safe","0","-i","/tmp/concat.txt",
-         "-vf",f"scale={W}:{H},setsar=1","-c:v","libx264","-c:a","aac","-preset","ultrafast",out],
+         "-vf",f"scale={W}:{H},setsar=1","-c:v","libx264","-c:a","aac","-crf","18","-preset","faster",out],
         capture_output=True, text=True, timeout=600
     )
     ok = os.path.exists(out) and os.path.getsize(out) > 1000
