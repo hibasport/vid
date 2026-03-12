@@ -235,7 +235,8 @@ def render_overlay(title, location, date_str, visibility, color_hex, W, H):
 # ══════════════════════════════════════════════════════════════
 #   Overlay مميز لـ chouf2
 #
-#   تاريخ [أيقونة]  يسار    |    [أيقونة] مكان  يمين  (بدون خلفية)
+#   [تاريخ][🗓]  يسار    |    [مكان][📍]  يمين  — بدون خلفية
+#   كلاهما في نفس المستوى الأفقي مع شعار الـ frame
 #   شريط عنوان أضيق بلون البابليشر
 #   [مسافة] badge خاص/متداول بلون البابليشر
 # ══════════════════════════════════════════════════════════════
@@ -252,8 +253,11 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
     font_sz  = max(34, int(W * 0.038))
     font_i   = load_font(font_sz)
     icon_sz  = int(font_sz * 0.52)
-    icon_gap = int(font_sz * 0.3)
-    info_y   = int(H * 0.055)   # ينزل عن أعلى الفيديو
+    icon_gap = int(font_sz * 0.28)
+    margin_x = int(W * 0.037)
+
+    # info_y: يتوافق مع مستوى شعار الـ frame (أعلى الفيديو)
+    info_y   = int(H * 0.038)
 
     # ── Overlay 1: دائم (تاريخ يسار + مكان يمين، بدون خلفية) ──
     img_perm  = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -290,26 +294,30 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
                 gx=gx0+col*csp; gy=gy0+row*rsp
                 d.ellipse([gx-dot_r,gy-dot_r,gx+dot_r,gy+dot_r], fill=color)
 
-    margin_x = int(W * 0.037)
+    # حساب ارتفاع النصوص لتوسيط رأسي موحد
+    th_d = get_tw(draw_perm, date_str,  font_i)[1] if date_str  else 0
+    th_l = get_tw(draw_perm, location,  font_i)[1] if location  else 0
+    max_h    = max(th_d, th_l, 1)
+    center_y = info_y + max_h // 2   # المركز الرأسي المشترك للأيقونات
 
-    # التاريخ يسار: [نص]  [أيقونة] — الأيقونة على يمين النص
+    # التاريخ يسار: [نص]  [أيقونة🗓]
     if date_str:
         tw, th = get_tw(draw_perm, date_str, font_i)
+        ty = info_y + (max_h - th) // 2
+        draw_perm.text((margin_x+2, ty+2), date_str, font=font_i, fill=shadow)
+        draw_perm.text((margin_x,   ty),   date_str, font=font_i, fill=white)
         ic_cx = margin_x + tw + icon_gap + icon_sz
-        ic_cy = info_y + th//2
-        draw_perm.text((margin_x+2, info_y+2), date_str, font=font_i, fill=shadow)
-        draw_perm.text((margin_x,   info_y),   date_str, font=font_i, fill=white)
-        draw_icon_calendar(draw_perm, ic_cx, ic_cy, icon_sz, white)
+        draw_icon_calendar(draw_perm, ic_cx, center_y, icon_sz, white)
 
-    # المكان يمين: [أيقونة]  [نص]
+    # المكان يمين: [نص]  [أيقونة📍]
     if location:
         tw2, th2 = get_tw(draw_perm, location, font_i)
-        ic_cx2 = W - margin_x - tw2 - icon_gap - icon_sz
-        ic_cy2 = info_y + th2//2
-        draw_icon_location(draw_perm, ic_cx2, ic_cy2, icon_sz, white)
-        loc_tx = ic_cx2 + icon_sz + icon_gap
-        draw_perm.text((loc_tx+2, info_y+2), location, font=font_i, fill=shadow)
-        draw_perm.text((loc_tx,   info_y),   location, font=font_i, fill=white)
+        ty2 = info_y + (max_h - th2) // 2
+        ic_cx2 = W - margin_x - icon_sz
+        loc_tx  = ic_cx2 - icon_gap - tw2
+        draw_perm.text((loc_tx+2, ty2+2), location, font=font_i, fill=shadow)
+        draw_perm.text((loc_tx,   ty2),   location, font=font_i, fill=white)
+        draw_icon_location(draw_perm, ic_cx2, center_y, icon_sz, white)
 
     img_perm.save("/tmp/overlay_permanent.png", "PNG")
     print("✅ overlay_permanent.png (chouf2)")
@@ -323,7 +331,7 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
         font_t     = load_font(font_size)
         bar_pad_h  = int(W * 0.045)
         bar_pad_v  = int(H * 0.016)
-        bar_w      = int(W * 0.78)          # أضيق — لا يلامس الإطار
+        bar_w      = int(W * 0.78)
         usable     = bar_w - 2 * bar_pad_h
         lines      = wrap_text(draw_title, title, font_t, usable)
         line_h     = int(font_size * 1.55)
@@ -331,7 +339,6 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
         bar_x      = (W - bar_w) // 2
         bar_y      = H - bar_h - int(H * 0.22)
 
-        # شريط العنوان بلون البابليشر
         draw_title.rectangle([bar_x, bar_y, bar_x+bar_w, bar_y+bar_h], fill=pub_color)
         for i, line in enumerate(lines):
             lw, _ = get_tw(draw_title, line, font_t)
@@ -340,7 +347,6 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
             draw_title.text((tx+2, ty+2), line, font=font_t, fill=(0,0,0,110))
             draw_title.text((tx,   ty),   line, font=font_t, fill=white)
 
-        # badge خاص/متداول: مسافة تحت العنوان + لون البابليشر
         if visibility:
             font_bdg  = load_font(max(28, int(W * 0.036)))
             bw, bh    = get_tw(draw_title, visibility, font_bdg)
@@ -349,7 +355,7 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
             bdg_w     = bw + bdg_pad_h * 2
             bdg_h     = bh + bdg_pad_v * 2
             bdg_x     = bar_x + (bar_w - bdg_w) // 2
-            bdg_gap   = int(H * 0.013)      # مسافة بين العنوان والـ badge
+            bdg_gap   = int(H * 0.013)
             bdg_y     = bar_y + bar_h + bdg_gap
             draw_title.rectangle([bdg_x, bdg_y, bdg_x+bdg_w, bdg_y+bdg_h], fill=pub_color)
             draw_title.text((bdg_x+bdg_pad_h+2, bdg_y+bdg_pad_v+2),
