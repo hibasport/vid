@@ -695,13 +695,7 @@ def upload_and_send(video_path, pub_name, title, source_url):
         "source_url": source_url,
     }, timeout=30)
     print(f"  📡 Webhook أُرسل → {pub_name}")
-
-    time.sleep(600)
-    try:
-        cloudinary.uploader.destroy(public_id, resource_type="video")
-        print(f"  🗑️  حُذف من Cloudinary")
-    except Exception as e:
-        print(f"  ⚠️ فشل الحذف: {e}")
+    # Make.com يحمل الفيديو مباشرة — الحذف يتم في الـ run التالي عبر overwrite=True
 
     return url
 
