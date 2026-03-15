@@ -40,6 +40,36 @@ def load_font(size):
             except: continue
     return ImageFont.load_default()
 
+def load_alnahar_font(size):
+    """تحميل خط AlNahar من woff2 مع تحويل تلقائي إلى TTF عند الحاجة"""
+    from PIL import ImageFont
+    base_dir  = os.path.dirname(os.path.abspath(__file__))
+    ttf_path  = os.path.join(base_dir, "alnahar.ttf")
+    woff2_path = os.path.join(base_dir, "alnaharf.woff2")
+
+    if not os.path.exists(ttf_path) and os.path.exists(woff2_path):
+        try:
+            from fontTools.ttLib import TTFont
+            font_obj = TTFont(woff2_path)
+            font_obj.save(ttf_path)
+            print(f"  ✅ تم تحويل alnaharf.woff2 → alnahar.ttf")
+        except Exception as e:
+            print(f"  ⚠️ فشل تحويل خط AlNahar: {e}")
+
+    for path in [
+        ttf_path,
+        os.path.join(base_dir, "Montserrat-Arabic-Bold.ttf"),
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    ]:
+        if os.path.exists(path):
+            try:
+                f = ImageFont.truetype(path, size)
+                print(f"  ✅ خط AlNahar: {os.path.basename(path)} ({size}px)")
+                return f
+            except: continue
+    return ImageFont.load_default()
+
 def get_tw(draw, text, font):
     bb = draw.textbbox((0, 0), text, font=font)
     return bb[2] - bb[0], bb[3] - bb[1]
@@ -361,6 +391,135 @@ def render_overlay_chouf2(title, location, date_str, visibility, color_hex, W, H
     print("✅ overlay_title.png (chouf2)")
     return "/tmp/overlay_title.png"
 
+
+
+# ══════════════════════════════════════════════════════════════
+#   Overlay مميز لـ test (AlNahar)
+#
+#   - الخط: alnaharf.woff2 (يُحوَّل تلقائياً إلى TTF)
+#   - خلفية شريط العنوان: أبيض صلب بدون شفافية
+#   - لون النص: #3015e0
+#   - باقي العناصر (مكان / تاريخ / متداول) مطابق للـ render_overlay العادي
+# ══════════════════════════════════════════════════════════════
+
+def render_overlay_test(title, location, date_str, visibility, color_hex, W, H):
+    from PIL import Image, ImageDraw
+    import math
+
+    white       = (255, 255, 255, 255)
+    shadow      = (0,   0,   0,   160)
+    title_color = (48,  21,  224, 255)   # #3015e0
+    title_bg    = (255, 255, 255, 255)   # أبيض صلب — بدون شفافية
+    pad         = int(W * 0.04)
+
+    # ── Overlay 1: دائم (مكان + تاريخ + متداول) ───────────────
+    img_perm  = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw_perm = ImageDraw.Draw(img_perm)
+
+    info_sz = max(30, int(W * 0.034))
+    font_i  = load_alnahar_font(info_sz)
+
+    def draw_icon_location(d, cx, cy, R, color):
+        lw     = max(3, int(R * 0.18))
+        head_r = R * 0.62; head_cy = cy - R * 0.28
+        pts = []
+        for i in range(41):
+            angle = math.pi + (math.pi * i / 40)
+            pts.append((cx + head_r * math.cos(angle), head_cy + head_r * math.sin(angle)))
+        tip_y = cy + R * 0.95; base_y = head_cy + head_r * 0.85; hw = head_r * 0.55
+        pts += [(cx + hw, base_y), (cx, tip_y), (cx - hw, base_y)]
+        d.polygon(pts, outline=color, width=lw)
+        ir = max(3, int(head_r * 0.38))
+        d.ellipse([cx-ir, head_cy-ir, cx+ir, head_cy+ir], outline=color, width=lw)
+
+    def draw_icon_calendar(d, cx, cy, R, color):
+        lw  = max(3, int(R * 0.17))
+        x0  = cx - R; x1 = cx + R
+        y0  = cy - int(R * 0.80); y1 = cy + int(R * 0.90)
+        rad = max(3, int(R * 0.18)); hh = int((y1 - y0) * 0.28)
+        d.rounded_rectangle([x0, y0, x1, y1], radius=rad, outline=color, width=lw)
+        d.line([(x0+1, y0+hh), (x1-1, y0+hh)], fill=color, width=lw)
+        pk_h = int(R * 0.35); pk_w = max(2, int(R * 0.11))
+        for px in [cx - int(R*0.38), cx + int(R*0.38)]:
+            d.rounded_rectangle([px-pk_w, y0-pk_h, px+pk_w, y0+int(pk_h*0.4)],
+                                  radius=pk_w, outline=color, width=lw)
+        dot_r = max(2, int(R * 0.09))
+        gx0 = x0 + int((x1-x0) * 0.16); gy0 = y0 + hh + int((y1-y0-hh) * 0.22)
+        csp = int((x1-x0) * 0.62 / 2); rsp = int((y1-y0-hh) * 0.48)
+        for row in range(2):
+            for col in range(3):
+                gx = gx0 + col * csp; gy = gy0 + row * rsp
+                d.ellipse([gx-dot_r, gy-dot_r, gx+dot_r, gy+dot_r], fill=color)
+
+    info_items = []
+    if location: info_items.append(("location", location))
+    if date_str: info_items.append(("date",     date_str))
+
+    icon_sz   = int(info_sz * 0.46)
+    icon_gap  = int(info_sz * 0.28)
+    y = int(H * 0.13)
+
+    max_tw = max((get_tw(draw_perm, t, font_i)[0] for _, t in info_items), default=0)
+    right_anchor = pad + max_tw + icon_gap + icon_sz * 2
+
+    for kind, text in info_items:
+        tw, th = get_tw(draw_perm, text, font_i)
+        icon_cx = right_anchor - icon_sz
+        icon_cy = y + th // 2 + int(icon_sz * 0.15)
+        text_x  = icon_cx - icon_sz - icon_gap - tw
+        draw_perm.text((text_x+2, y+2), text, font=font_i, fill=shadow)
+        draw_perm.text((text_x,   y),   text, font=font_i, fill=white)
+        if kind == "location":
+            draw_icon_location(draw_perm, icon_cx, icon_cy, icon_sz, (255,255,255,240))
+        else:
+            draw_icon_calendar(draw_perm, icon_cx, icon_cy + int(icon_sz * 0.18), icon_sz, (255,255,255,240))
+        y += th + int(info_sz * 0.55)
+
+    if visibility:
+        badge_sz = max(26, int(W * 0.030))
+        font_b   = load_alnahar_font(badge_sz)
+        bw, bh   = get_tw(draw_perm, visibility, font_b)
+        margin   = int(badge_sz * 0.35)
+        tmp      = Image.new("RGBA", (bw + margin*2, bh + margin*2), (0, 0, 0, 0))
+        td       = ImageDraw.Draw(tmp)
+        td.text((margin+1, margin+1), visibility, font=font_b, fill=shadow)
+        td.text((margin,   margin),   visibility, font=font_b, fill=white)
+        rotated  = tmp.rotate(90, expand=True)
+        img_perm.paste(rotated, (4, (H - rotated.height) // 2), rotated)
+
+    img_perm.save("/tmp/overlay_permanent.png", "PNG")
+    print("✅ overlay_permanent.png (test/alnahar)")
+
+    # ── Overlay 2: شريط العنوان — خلفية بيضاء صلبة + نص #3015e0 ──
+    img_title  = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw_title = ImageDraw.Draw(img_title)
+
+    if title:
+        font_size = max(20, int(W * 0.042))
+        font_t    = load_alnahar_font(font_size)
+        pad_h     = int(W * 0.05)
+        pad_v     = int(H * 0.018)
+        bar_w     = W - int(W * 0.25)
+        usable    = bar_w - 2 * pad_h
+
+        lines  = wrap_text(draw_title, title, font_t, usable)
+        line_h = int(font_size * 1.5)
+        bar_h  = len(lines) * line_h + 2 * pad_v
+        bar_x  = (W - bar_w) // 2
+        bar_y  = H - bar_h - int(H * 0.22)
+
+        # خلفية بيضاء صلبة — بدون أي شفافية
+        draw_title.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], fill=title_bg)
+        for i, line in enumerate(lines):
+            lw, _ = get_tw(draw_title, line, font_t)
+            tx = bar_x + (bar_w - lw) // 2
+            ty = bar_y + pad_v + i * line_h
+            draw_title.text((tx+1, ty+1), line, font=font_t, fill=(0, 0, 0, 40))  # ظل خفيف
+            draw_title.text((tx,   ty),   line, font=font_t, fill=title_color)
+
+    img_title.save("/tmp/overlay_title.png", "PNG")
+    print("✅ overlay_title.png (test/alnahar)")
+    return "/tmp/overlay_title.png"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -778,6 +937,8 @@ for pub in target_pubs:
     # ── رسم وتطبيق الـ Overlay الكامل (عنوان + مكان + تاريخ + متداول) ──
     if name == "chouf2":
         render_overlay_chouf2(video_title, VIDEO_LOCATION, VIDEO_DATE, VIDEO_VISIBILITY, color, W, H)
+    elif name == "test":
+        render_overlay_test(video_title, VIDEO_LOCATION, VIDEO_DATE, VIDEO_VISIBILITY, color, W, H)
     else:
         render_overlay(video_title, VIDEO_LOCATION, VIDEO_DATE, VIDEO_VISIBILITY, color, W, H)
     titled_out = f"/tmp/titled_{name}.mp4"
