@@ -671,7 +671,7 @@ def fetch_latest_from_page(page_url):
 
             elif len(lines) == 1 and lines[0].startswith("http"):
                 print(f"  ✅ (رابط فقط بدون عنوان)")
-                return lines[0], "بدون عنوان"
+                return lines[0], ""
 
         except subprocess.TimeoutExpired:
             print(f"    ⏰ timeout")
@@ -882,7 +882,7 @@ print(f"📋 الصفحات: {[p['name'] for p in target_pubs]}")
 if VIDEO_URL_INPUT:
     print(f"🔗 رابط مباشر: {VIDEO_URL_INPUT[:80]}")
     video_url   = VIDEO_URL_INPUT
-    video_title = VIDEO_TITLE_INPUT or "بدون عنوان"
+    video_title = VIDEO_TITLE_INPUT  # فارغ = لا عنوان على الفيديو
 else:
     if not sources:
         print("❌ لا توجد sources في config.json"); exit(1)
