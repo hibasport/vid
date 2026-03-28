@@ -557,6 +557,27 @@ def apply_overlay(main, out, dur):
                 print("  ✅ (split overlay)"); return True
             if os.path.exists(out): os.remove(out)
 
+    # ── Permanent فقط (بدون عنوان) ──────────────────────────────
+    if has_perm and not has_title:
+        fc_perm = (
+            f"[1:v]format=yuva420p,"
+            f"fade=t=in:st={show_start}:d={fade_in}:alpha=1[perm];"
+            f"[0:v][perm]overlay=0:0[v]"
+        )
+        for maps in [["-map","[v]","-map","0:a"], ["-map","[v]"]]:
+            subprocess.run(
+                ["ffmpeg", "-y", "-threads", "2",
+                 "-i", main,
+                 "-loop","1","-t",str(loop_dur),"-i", perm_png,
+                 "-filter_complex", fc_perm,
+                 *maps, "-c:v","libx264","-c:a","copy","-preset","ultrafast","-shortest", out],
+                capture_output=True, text=True, timeout=600
+            )
+            if os.path.exists(out) and os.path.getsize(out) > 1000:
+                print("  ✅ (permanent only)"); return True
+            if os.path.exists(out): os.remove(out)
+
+    # ── Title فقط (fallback) ─────────────────────────────────────
     if has_title:
         fc2 = (
             f"[1:v]format=yuva420p,"
