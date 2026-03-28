@@ -853,12 +853,32 @@ def upload_and_send(video_path, pub_name, video_title, post_text, source_url):
     # نص المنشور: إذا فارغ يُستخدم العنوان كبديل
     final_post_text = post_text or video_title
 
+    # ── عنوان قصير ≤95 حرف لـ YouTube وما شابه ──────────────────
+    def make_short_title(text, max_len=95):
+        if not text:
+            return ""
+        first_line = text.split("\n")[0].strip()
+        clean = re.sub(r"#\S+", "", first_line)   # أحذف #هاشتاغات
+        clean = re.sub(r"@\S+", "", clean)         # أحذف @إشارات
+        clean = re.sub(r"https?://\S+", "", clean) # أحذف روابط
+        clean = re.sub(r"\s+", " ", clean).strip()
+        if not clean:
+            clean = first_line                     # fallback: السطر الأول كما هو
+        if len(clean) > max_len:
+            clean = clean[:max_len - 1].rstrip() + "…"
+        return clean
+
+    # الأولوية: عنوان الفيديو المكتوب → أول سطر نظيف من نص المنشور
+    short_title = video_title if video_title else make_short_title(final_post_text)
+    print(f"  📌 عنوان قصير ({len(short_title)} حرف): {short_title[:60]}")
+
     requests.post(WEBHOOK_URL, json={
-        "video_url":  url,
-        "title":      video_title,      # العنوان المرسوم على الفيديو
-        "post_text":  final_post_text,  # نص المنشور (مع هاشتاغات إلخ)
-        "publisher":  pub_name,
-        "source_url": source_url,
+        "video_url":   url,
+        "title":       video_title,       # العنوان المرسوم على الفيديو (قد يكون فارغاً)
+        "title_short": short_title,       # ≤95 حرف بدون هاشتاغات — لـ YouTube وما شابه
+        "post_text":   final_post_text,   # نص المنشور الكامل — لـ Facebook وما شابه
+        "publisher":   pub_name,
+        "source_url":  source_url,
     }, timeout=30)
     print(f"  📡 Webhook أُرسل → {pub_name}")
 
