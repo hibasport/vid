@@ -99,4 +99,6 @@ jobs:
           CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           WEBHOOK_URL:           ${{ secrets.WEBHOOK_URL }}
+          PANEL_CALLBACK_URL:    ${{ secrets.PANEL_CALLBACK_URL }}
+          PANEL_SECRET:          ${{ secrets.PANEL_SECRET }}
         run: python bot.py

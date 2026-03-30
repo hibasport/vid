@@ -1,8 +1,10 @@
 import os, json, subprocess, re, cloudinary, cloudinary.uploader, requests, time, sys
 
 # ─── إعدادات ─────────────────────────────────────────────────
-COOKIES_FILE   = "/tmp/cookies.txt"
-WEBHOOK_URL    = os.environ["WEBHOOK_URL"]
+COOKIES_FILE        = "/tmp/cookies.txt"
+WEBHOOK_URL         = os.environ["WEBHOOK_URL"]
+PANEL_CALLBACK_URL  = os.environ.get("PANEL_CALLBACK_URL", "").strip()
+PANEL_SECRET        = os.environ.get("PANEL_SECRET", "").strip()
 TARGET_W, TARGET_H = 1080, 1920
 
 cloudinary.config(
@@ -881,6 +883,20 @@ def upload_and_send(video_path, pub_name, video_title, post_text, source_url):
         "source_url":  source_url,
     }, timeout=30)
     print(f"  📡 Webhook أُرسل → {pub_name}")
+
+    # ── إشعار panel.php برابط الفيديو الجاهز ──────────────────
+    if PANEL_CALLBACK_URL and PANEL_SECRET:
+        try:
+            requests.post(PANEL_CALLBACK_URL, json={
+                "secret":    PANEL_SECRET,
+                "video_url": url,
+                "title":     video_title or short_title,
+                "publisher": pub_name,
+                "post_text": final_post_text,
+            }, timeout=15)
+            print(f"  📲 Panel notified → {pub_name}")
+        except Exception as e:
+            print(f"  ⚠️ Panel notify failed: {e}")
 
     return url
 
