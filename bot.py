@@ -342,7 +342,7 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
     img_perm.save("/tmp/overlay_permanent.png", "PNG")
     print("✅ overlay_permanent.png (chouf2)")
     
-    # ========== شريط العنوان + متداول/خاص تحته مباشرة (مرفوعين للأعلى) ==========
+    # ========== شريط العنوان + متداول/خاص تحته مباشرة (المكان الأصلي) ==========
     img_title  = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw_title = ImageDraw.Draw(img_title)
     
@@ -356,9 +356,6 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         visibility_font = load_font(max(32, int(W * 0.038)))
         vw, vh = get_tw(draw_title, visibility_badge, visibility_font)
     
-    # رفع العناصر للأعلى: نبدأ من منتصف الفيديو تقريباً بدلاً من الأسفل
-    start_from_bottom_ratio = 0.35  # 35% من الأسفل (أي أعلى بكثير)
-    
     if title:
         font_size  = 40
         font_t     = load_font(font_size)
@@ -371,17 +368,8 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         bar_h      = len(lines) * line_h + 2 * bar_pad_v
         bar_x      = (W - bar_w) // 2
         
-        # حساب ارتفاع كلمة متداول/خاص
-        visibility_height = 0
-        if visibility_badge and vh > 0:
-            visibility_height = vh + int(vh * 0.6)  # المسافة تحت العنوان
-        
-        # حساب الارتفاع الكلي (العنوان + متداول)
-        total_height = bar_h + visibility_height
-        
-        # نضع المجموعة في موقع مرتفع (أعلى من منتصف الفيديو)
-        # نستخدم start_from_bottom_ratio لتحديد المسافة من الأسفل
-        bar_y = H - int(H * start_from_bottom_ratio) - total_height
+        # الموقع الأصلي: أسفل الفيديو مع مسافة مناسبة
+        bar_y = H - bar_h - int(H * 0.12)  # الموقع الأصلي
         
         # خلفية باللون #4a1816 غير شفافة
         draw_title.rectangle([bar_x, bar_y, bar_x+bar_w, bar_y+bar_h], fill=bg_color)
@@ -392,9 +380,9 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
             ty = bar_y + bar_pad_v + i * line_h
             draw_title.text((tx, ty), line, font=font_t, fill=white)
         
-        # إضافة كلمة "متداول/خاص" تحت شريط العنوان مباشرة
+        # إضافة كلمة "متداول/خاص" تحت شريط العنوان مباشرة (الموقع الأصلي)
         if visibility_badge and vh > 0:
-            v_margin = int(H * 0.01)  # مسافة صغيرة تحت الشريط
+            v_margin = int(H * 0.008)  # مسافة صغيرة تحت الشريط
             v_x = (W - vw) // 2
             v_y = bar_y + bar_h + v_margin
             
@@ -408,12 +396,11 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
             draw_title.text((v_x, v_y), visibility_badge, font=visibility_font, fill=white)
     
     else:
-        # إذا لم يوجد عنوان، نضيف فقط كلمة متداول/خاص في موقع مرتفع
+        # إذا لم يوجد عنوان، نضيف فقط كلمة متداول/خاص في الموقع الأصلي
         if visibility_badge and vh > 0:
             bg_padding = int(vh * 0.4)
             v_x = (W - vw) // 2
-            # نضع الكلمة في موقع مرتفع (35% من الأسفل)
-            v_y = H - int(H * start_from_bottom_ratio) - vh
+            v_y = H - vh - int(H * 0.08)  # الموقع الأصلي
             
             draw_title.rectangle(
                 [v_x - bg_padding, v_y - bg_padding//2, v_x + vw + bg_padding, v_y + vh + bg_padding//2],
