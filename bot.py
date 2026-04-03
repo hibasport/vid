@@ -309,13 +309,17 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
 
     # ========== الجزء الثابت (يظهر طيلة الفيديو) ==========
 
-    # 1. التاريخ والمكان مع إطار أبيض يشمل النص + الأيقونة معاً
     padding_h = 14
     padding_v = 8
     inner_gap = int(icon_sz * 0.6)
 
+    # 1. التاريخ مع إطار أبيض يشمل النص + الأيقونة
     if date_str:
-        tw, th = get_tw(draw_perm, date_str, font_i)
+        bb = draw_perm.textbbox((0, 0), date_str, font=font_i)
+        tw = bb[2] - bb[0]
+        th = bb[3] - bb[1]
+        t_offset_y = bb[1]  # الإزاحة العلوية الحقيقية للخط
+
         total_inner_w = tw + inner_gap + icon_sz * 2
         box_w = total_inner_w + 2 * padding_h
         box_h = max(th, icon_sz * 2) + 2 * padding_v
@@ -328,7 +332,8 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
             outline=border_color, width=border_width
         )
 
-        text_y = box_y + (box_h - th) // 2
+        # توسيط النص عمودياً مع تصحيح الـ offset
+        text_y = box_y + (box_h - th) // 2 - t_offset_y
         text_x = box_x + padding_h
         draw_perm.text((text_x+2, text_y+2), date_str, font=font_i, fill=shadow)
         draw_perm.text((text_x,   text_y),   date_str, font=font_i, fill=white)
@@ -337,8 +342,13 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         ic_cy = box_y + box_h // 2
         draw_icon_calendar(draw_perm, ic_cx, ic_cy, icon_sz, white)
 
+    # 2. المكان مع إطار أبيض يشمل النص + الأيقونة
     if location:
-        tw2, th2 = get_tw(draw_perm, location, font_i)
+        bb2 = draw_perm.textbbox((0, 0), location, font=font_i)
+        tw2 = bb2[2] - bb2[0]
+        th2 = bb2[3] - bb2[1]
+        t_offset_y2 = bb2[1]  # الإزاحة العلوية الحقيقية للخط
+
         total_inner_w2 = tw2 + inner_gap + icon_sz * 2
         box_w2 = total_inner_w2 + 2 * padding_h
         box_h2 = max(th2, icon_sz * 2) + 2 * padding_v
@@ -351,7 +361,7 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
             outline=border_color, width=border_width
         )
 
-        text_y2 = box_y2 + (box_h2 - th2) // 2
+        text_y2 = box_y2 + (box_h2 - th2) // 2 - t_offset_y2
         text_x2 = box_x2 + padding_h
         draw_perm.text((text_x2+2, text_y2+2), location, font=font_i, fill=shadow)
         draw_perm.text((text_x2,   text_y2),   location, font=font_i, fill=white)
@@ -360,7 +370,7 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         ic_cy2 = box_y2 + box_h2 // 2
         draw_icon_location(draw_perm, ic_cx2, ic_cy2, icon_sz, white)
 
-    # 2. @مصدر عمودي على اليسار
+    # 3. @مصدر عمودي على اليسار
     if source_badge:
         badge_sz = max(26, int(W * 0.030))
         font_b   = load_font(badge_sz)
@@ -373,7 +383,7 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         rotated  = tmp.rotate(90, expand=True)
         img_perm.paste(rotated, (25, (H - rotated.height) // 2), rotated)
 
-    # 3. كلمة "متداول/خاص" مع خلفية وإطار أبيض
+    # 4. كلمة "متداول/خاص" مع خلفية وإطار أبيض
     if visibility_badge:
         visibility_font = load_font(max(28, int(W * 0.032)))
         vw, vh = get_tw(draw_perm, visibility_badge, visibility_font)
