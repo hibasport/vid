@@ -257,7 +257,7 @@ def render_overlay(title, location, date_str, visibility_badge, color_hex, W, H)
 # ══════════════════════════════════════════════════════════════
 
 def render_overlay_chouf2(title, location, date_str, visibility_badge, source_badge, color_hex, W, H):
-    from PIL import Image, ImageDraw
+    from PIL import Image, ImageDraw, ImageFilter
     import math
     
     white  = (255, 255, 255, 255)
@@ -265,6 +265,10 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
     
     # اللون المطلوب #4a1816
     bg_color = (74, 24, 22, 255)  # #4a1816
+    
+    # لون الإطار الأبيض
+    border_color = (255, 255, 255, 255)
+    border_width = 2
     
     font_sz  = max(28, int(W * 0.030))
     font_i   = load_font(font_sz)
@@ -309,10 +313,17 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
     
     # ========== الجزء الثابت (يظهر طيلة الفيديو) ==========
     
-    # 1. التاريخ والمكان (أعلى الفيديو)
+    # 1. التاريخ والمكان (أعلى الفيديو) مع إطار أبيض
     if date_str:
         tw, th = get_tw(draw_perm, date_str, font_i)
         text_cy = info_y + th // 2
+        
+        # رسم إطار أبيض حول التاريخ
+        padding = 8
+        draw_perm.rectangle(
+            [margin_x - padding, info_y - padding//2, margin_x + tw + padding, info_y + th + padding//2],
+            outline=border_color, width=border_width
+        )
         draw_perm.text((margin_x+2, info_y+2), date_str, font=font_i, fill=shadow)
         draw_perm.text((margin_x,   info_y),   date_str, font=font_i, fill=white)
         ic_cx = margin_x + tw + icon_gap + icon_sz
@@ -323,6 +334,13 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         text_cy2 = info_y + th2 // 2
         ic_cx2 = W - margin_x - icon_sz
         loc_tx  = ic_cx2 - icon_gap - tw2
+        
+        # رسم إطار أبيض حول المكان
+        padding = 8
+        draw_perm.rectangle(
+            [loc_tx - padding, info_y - padding//2, loc_tx + tw2 + padding, info_y + th2 + padding//2],
+            outline=border_color, width=border_width
+        )
         draw_perm.text((loc_tx+2, info_y+2), location, font=font_i, fill=shadow)
         draw_perm.text((loc_tx,   info_y),   location, font=font_i, fill=white)
         draw_icon_location(draw_perm, ic_cx2, text_cy2, icon_sz, white)
@@ -340,7 +358,7 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         rotated  = tmp.rotate(90, expand=True)
         img_perm.paste(rotated, (25, (H - rotated.height) // 2), rotated)
     
-    # 3. كلمة "متداول/خاص" (تبقى طيلة الفيديو - توضع في overlay_permanent.png)
+    # 3. كلمة "متداول/خاص" (تبقى طيلة الفيديو) مع إطار أبيض
     if visibility_badge:
         visibility_font = load_font(max(32, int(W * 0.038)))
         vw, vh = get_tw(draw_perm, visibility_badge, visibility_font)
@@ -348,10 +366,11 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         v_x = (W - vw) // 2
         v_y = H - vh - int(H * 0.12)  # الموقع الأصلي في الأسفل
         
-        draw_perm.rectangle(
-            [v_x - bg_padding, v_y - bg_padding//2, v_x + vw + bg_padding, v_y + vh + bg_padding//2],
-            fill=bg_color
-        )
+        # مستطيل الخلفية
+        rect_coords = [v_x - bg_padding, v_y - bg_padding//2, v_x + vw + bg_padding, v_y + vh + bg_padding//2]
+        draw_perm.rectangle(rect_coords, fill=bg_color)
+        # إطار أبيض
+        draw_perm.rectangle(rect_coords, outline=border_color, width=border_width)
         draw_perm.text((v_x+2, v_y+2), visibility_badge, font=visibility_font, fill=shadow)
         draw_perm.text((v_x, v_y), visibility_badge, font=visibility_font, fill=white)
     
@@ -367,7 +386,13 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         font_t     = load_font(font_size)
         bar_pad_h  = int(W * 0.045)
         bar_pad_v  = int(H * 0.018)
-        bar_w      = int(W * 0.85)
+        
+        # تغيير عرض الشريط إلى 765 بكسل
+        bar_w      = 765  # العرض المطلوب
+        # التأكد من أن العرض لا يتجاوز عرض الفيديو
+        if bar_w > W:
+            bar_w = W - 40
+        
         usable     = bar_w - 2 * bar_pad_h
         lines      = wrap_text(draw_title, title, font_t, usable)
         line_h     = int(font_size * 1.55)
@@ -383,8 +408,11 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         else:
             bar_y = H - bar_h - int(H * 0.12)
         
-        # خلفية باللون #4a1816 غير شفافة
-        draw_title.rectangle([bar_x, bar_y, bar_x+bar_w, bar_y+bar_h], fill=bg_color)
+        # مستطيل الخلفية لشريط العنوان
+        rect_coords = [bar_x, bar_y, bar_x+bar_w, bar_y+bar_h]
+        draw_title.rectangle(rect_coords, fill=bg_color)
+        # إطار أبيض حول شريط العنوان
+        draw_title.rectangle(rect_coords, outline=border_color, width=border_width)
         
         for i, line in enumerate(lines):
             lw, _ = get_tw(draw_title, line, font_t)
