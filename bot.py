@@ -263,17 +263,13 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
     white  = (255, 255, 255, 255)
     shadow = (0, 0, 0, 160)
     
-    # اللون المطلوب #4a1816 - غير شفاف تماماً
-    bg_color = (74, 24, 22, 255)  # #4a1816 - صلب غير شفاف
-    
-    # لون الإطار الأبيض
+    bg_color     = (74, 24, 22, 255)
     border_color = (255, 255, 255, 255)
     border_width = 2
     
     font_sz  = max(28, int(W * 0.030))
     font_i   = load_font(font_sz)
     icon_sz  = int(font_sz * 0.42)
-    icon_gap = int(font_sz * 0.55)
     margin_x = int(W * 0.037)
     info_y   = int(H * 0.038)
     
@@ -310,54 +306,61 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
             for col in range(3):
                 gx=gx0+col*csp; gy=gy0+row*rsp
                 d.ellipse([gx-dot_r,gy-dot_r,gx+dot_r,gy+dot_r], fill=color)
-    
+
     # ========== الجزء الثابت (يظهر طيلة الفيديو) ==========
-    
-    # 1. التاريخ والمكان (أعلى الفيديو) مع إطار أبيض
+
+    # 1. التاريخ والمكان مع إطار أبيض يشمل النص + الأيقونة معاً
+    padding_h = 14
+    padding_v = 8
+    inner_gap = int(icon_sz * 0.6)
+
     if date_str:
         tw, th = get_tw(draw_perm, date_str, font_i)
-        text_cy = info_y + th // 2
-        
-        # حساب المسافات بشكل صحيح
-        padding_h = 12  # مسافة أفقية
-        padding_v = 6   # مسافة عمودية
-        
-        # رسم إطار أبيض حول التاريخ
-        rect_coords = [
-            margin_x - padding_h, 
-            info_y - padding_v, 
-            margin_x + tw + padding_h, 
-            info_y + th + padding_v
-        ]
-        draw_perm.rectangle(rect_coords, outline=border_color, width=border_width)
-        draw_perm.text((margin_x+2, info_y+2), date_str, font=font_i, fill=shadow)
-        draw_perm.text((margin_x,   info_y),   date_str, font=font_i, fill=white)
-        ic_cx = margin_x + tw + icon_gap + icon_sz
-        draw_icon_calendar(draw_perm, ic_cx, text_cy, icon_sz, white)
-    
+        total_inner_w = tw + inner_gap + icon_sz * 2
+        box_w = total_inner_w + 2 * padding_h
+        box_h = max(th, icon_sz * 2) + 2 * padding_v
+
+        box_x = margin_x
+        box_y = info_y
+
+        draw_perm.rectangle(
+            [box_x, box_y, box_x + box_w, box_y + box_h],
+            outline=border_color, width=border_width
+        )
+
+        text_y = box_y + (box_h - th) // 2
+        text_x = box_x + padding_h
+        draw_perm.text((text_x+2, text_y+2), date_str, font=font_i, fill=shadow)
+        draw_perm.text((text_x,   text_y),   date_str, font=font_i, fill=white)
+
+        ic_cx = text_x + tw + inner_gap + icon_sz
+        ic_cy = box_y + box_h // 2
+        draw_icon_calendar(draw_perm, ic_cx, ic_cy, icon_sz, white)
+
     if location:
         tw2, th2 = get_tw(draw_perm, location, font_i)
-        text_cy2 = info_y + th2 // 2
-        ic_cx2 = W - margin_x - icon_sz
-        loc_tx  = ic_cx2 - icon_gap - tw2
-        
-        # حساب المسافات بشكل صحيح
-        padding_h = 12
-        padding_v = 6
-        
-        # رسم إطار أبيض حول المكان
-        rect_coords = [
-            loc_tx - padding_h, 
-            info_y - padding_v, 
-            loc_tx + tw2 + padding_h, 
-            info_y + th2 + padding_v
-        ]
-        draw_perm.rectangle(rect_coords, outline=border_color, width=border_width)
-        draw_perm.text((loc_tx+2, info_y+2), location, font=font_i, fill=shadow)
-        draw_perm.text((loc_tx,   info_y),   location, font=font_i, fill=white)
-        draw_icon_location(draw_perm, ic_cx2, text_cy2, icon_sz, white)
-    
-    # 2. @مصدر عمودي على اليسار مع إزاحة لليمين (25 بكسل)
+        total_inner_w2 = tw2 + inner_gap + icon_sz * 2
+        box_w2 = total_inner_w2 + 2 * padding_h
+        box_h2 = max(th2, icon_sz * 2) + 2 * padding_v
+
+        box_x2 = W - margin_x - box_w2
+        box_y2 = info_y
+
+        draw_perm.rectangle(
+            [box_x2, box_y2, box_x2 + box_w2, box_y2 + box_h2],
+            outline=border_color, width=border_width
+        )
+
+        text_y2 = box_y2 + (box_h2 - th2) // 2
+        text_x2 = box_x2 + padding_h
+        draw_perm.text((text_x2+2, text_y2+2), location, font=font_i, fill=shadow)
+        draw_perm.text((text_x2,   text_y2),   location, font=font_i, fill=white)
+
+        ic_cx2 = text_x2 + tw2 + inner_gap + icon_sz
+        ic_cy2 = box_y2 + box_h2 // 2
+        draw_icon_location(draw_perm, ic_cx2, ic_cy2, icon_sz, white)
+
+    # 2. @مصدر عمودي على اليسار
     if source_badge:
         badge_sz = max(26, int(W * 0.030))
         font_b   = load_font(badge_sz)
@@ -369,49 +372,45 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
         td.text((margin,   margin),   source_badge, font=font_b, fill=white)
         rotated  = tmp.rotate(90, expand=True)
         img_perm.paste(rotated, (25, (H - rotated.height) // 2), rotated)
-    
-    # 3. كلمة "متداول/خاص" (تبقى طيلة الفيديو) مع إطار أبيض وحجم أصغر
+
+    # 3. كلمة "متداول/خاص" مع خلفية وإطار أبيض
     if visibility_badge:
-        # حجم خط أصغر قليلاً
-        visibility_font = load_font(max(28, int(W * 0.032)))  # قلصنا من 32 إلى 28
+        visibility_font = load_font(max(28, int(W * 0.032)))
         vw, vh = get_tw(draw_perm, visibility_badge, visibility_font)
-        bg_padding = int(vh * 0.5)  # مساحة أكبر قليلاً حول النص
+        bg_padding = int(vh * 0.5)
         v_x = (W - vw) // 2
-        v_y = H - vh - int(H * 0.12)  # الموقع الأصلي في الأسفل
-        
-        # مستطيل الخلفية (صلب غير شفاف)
-        rect_coords = [v_x - bg_padding, v_y - bg_padding//2, v_x + vw + bg_padding, v_y + vh + bg_padding//2]
+        v_y = H - vh - int(H * 0.12)
+
+        rect_coords = [v_x - bg_padding, v_y - bg_padding//2,
+                       v_x + vw + bg_padding, v_y + vh + bg_padding//2]
         draw_perm.rectangle(rect_coords, fill=bg_color)
-        # إطار أبيض
         draw_perm.rectangle(rect_coords, outline=border_color, width=border_width)
         draw_perm.text((v_x+2, v_y+2), visibility_badge, font=visibility_font, fill=shadow)
-        draw_perm.text((v_x, v_y), visibility_badge, font=visibility_font, fill=white)
-    
+        draw_perm.text((v_x,   v_y),   visibility_badge, font=visibility_font, fill=white)
+
     img_perm.save("/tmp/overlay_permanent.png", "PNG")
     print("✅ overlay_permanent.png (chouf2)")
-    
-    # ========== شريط العنوان فقط (يختفي بعد 12 ثانية) - بدون إطار ==========
+
+    # ========== شريط العنوان (يختفي بعد 12 ثانية) ==========
     img_title  = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw_title = ImageDraw.Draw(img_title)
-    
+
     if title:
         font_size  = 40
         font_t     = load_font(font_size)
         bar_pad_h  = int(W * 0.045)
         bar_pad_v  = int(H * 0.018)
-        
-        # عرض الشريط 765 بكسل
-        bar_w      = 765
+
+        bar_w  = 765
         if bar_w > W:
             bar_w = W - 40
-        
-        usable     = bar_w - 2 * bar_pad_h
-        lines      = wrap_text(draw_title, title, font_t, usable)
-        line_h     = int(font_size * 1.55)
-        bar_h      = len(lines) * line_h + 2 * bar_pad_v
-        bar_x      = (W - bar_w) // 2
-        
-        # موقع شريط العنوان (فوق كلمة متداول/خاص)
+
+        usable = bar_w - 2 * bar_pad_h
+        lines  = wrap_text(draw_title, title, font_t, usable)
+        line_h = int(font_size * 1.55)
+        bar_h  = len(lines) * line_h + 2 * bar_pad_v
+        bar_x  = (W - bar_w) // 2
+
         if visibility_badge:
             visibility_font = load_font(max(28, int(W * 0.032)))
             _, vh = get_tw(draw_title, visibility_badge, visibility_font)
@@ -419,18 +418,15 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
             bar_y = H - bar_h - vh - int(H * 0.12) - v_margin
         else:
             bar_y = H - bar_h - int(H * 0.12)
-        
-        # مستطيل الخلفية لشريط العنوان (صلب غير شفاف) - بدون إطار
-        rect_coords = [bar_x, bar_y, bar_x+bar_w, bar_y+bar_h]
-        draw_title.rectangle(rect_coords, fill=bg_color)
-        # لا نضيف إطار هنا
-        
+
+        draw_title.rectangle([bar_x, bar_y, bar_x+bar_w, bar_y+bar_h], fill=bg_color)
+
         for i, line in enumerate(lines):
             lw, _ = get_tw(draw_title, line, font_t)
             tx = bar_x + (bar_w - lw) // 2
             ty = bar_y + bar_pad_v + i * line_h
             draw_title.text((tx, ty), line, font=font_t, fill=white)
-    
+
     if title:
         img_title.save("/tmp/overlay_title.png", "PNG")
         print("✅ overlay_title.png (chouf2)")
