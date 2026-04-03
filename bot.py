@@ -602,9 +602,13 @@ def apply_overlay(main, out, dur):
     title_png = "/tmp/overlay_title.png"
     loop_dur  = dur + 2
     show_start = 0.0
-    fade_in    = 0.0
-    title_hide = 12.0
-    fade_out   = 0.8
+    # تم تعديل قيم fade_in و fade_out لشريط العنوان فقط
+    title_fade_in = 0.0      # يظهر فوراً من أول فريم (بدون fade-in)
+    title_hide    = 12.0     # يختفي بعد 12 ثانية
+    title_fade_out = 0.2     # fade-out سريع جداً عند الاختفاء (يمكنك جعله 0 أيضاً)
+
+    # للعناصر الثابتة (مثل المكان والتاريخ) يمكننا إبقاء fade-in خفيف أو جعله فورياً أيضاً
+    perm_fade_in = 0.0        # تغيير هذه القيمة إلى 0 لجعلها فورية أيضاً، أو 0.2 لتبدو أفضل
 
     has_perm  = os.path.exists(perm_png)
     has_title = os.path.exists(title_png)
@@ -612,10 +616,10 @@ def apply_overlay(main, out, dur):
     if has_perm and has_title:
         fc = (
             f"[1:v]format=yuva420p,"
-            f"fade=t=in:st={show_start}:d={fade_in}:alpha=1[perm];"
+            f"fade=t=in:st={show_start}:d={perm_fade_in}:alpha=1[perm];"
             f"[2:v]format=yuva420p,"
-            f"fade=t=in:st={show_start}:d={fade_in}:alpha=1,"
-            f"fade=t=out:st={title_hide}:d={fade_out}:alpha=1[ttl];"
+            f"fade=t=in:st={show_start}:d={title_fade_in}:alpha=1,"  # يظهر فوراً
+            f"fade=t=out:st={title_hide}:d={title_fade_out}:alpha=1[ttl];"
             f"[0:v][perm]overlay=0:0[tmp];"
             f"[tmp][ttl]overlay=0:0[v]"
         )
@@ -630,14 +634,15 @@ def apply_overlay(main, out, dur):
                 capture_output=True, text=True, timeout=600
             )
             if os.path.exists(out) and os.path.getsize(out) > 1000:
-                print("  ✅ (split overlay)"); return True
+                print("  ✅ (split overlay - title appears instantly)")
+                return True
             if os.path.exists(out): os.remove(out)
 
     # ── Permanent فقط (بدون عنوان) ──────────────────────────────
     if has_perm and not has_title:
         fc_perm = (
             f"[1:v]format=yuva420p,"
-            f"fade=t=in:st={show_start}:d={fade_in}:alpha=1[perm];"
+            f"fade=t=in:st={show_start}:d={perm_fade_in}:alpha=1[perm];"
             f"[0:v][perm]overlay=0:0[v]"
         )
         for maps in [["-map","[v]","-map","0:a"], ["-map","[v]"]]:
@@ -650,15 +655,16 @@ def apply_overlay(main, out, dur):
                 capture_output=True, text=True, timeout=600
             )
             if os.path.exists(out) and os.path.getsize(out) > 1000:
-                print("  ✅ (permanent only)"); return True
+                print("  ✅ (permanent only)")
+                return True
             if os.path.exists(out): os.remove(out)
 
     # ── Title فقط (fallback) ─────────────────────────────────────
     if has_title:
         fc2 = (
             f"[1:v]format=yuva420p,"
-            f"fade=t=in:st={show_start}:d={fade_in}:alpha=1,"
-            f"fade=t=out:st={title_hide}:d={fade_out}:alpha=1[ttl];"
+            f"fade=t=in:st={show_start}:d={title_fade_in}:alpha=1," # يظهر فوراً
+            f"fade=t=out:st={title_hide}:d={title_fade_out}:alpha=1[ttl];"
             f"[0:v][ttl]overlay=0:0[v]"
         )
         for maps in [["-map","[v]","-map","0:a"], ["-map","[v]"]]:
@@ -671,7 +677,8 @@ def apply_overlay(main, out, dur):
                 capture_output=True, text=True, timeout=600
             )
             if os.path.exists(out) and os.path.getsize(out) > 1000:
-                print("  ✅ (title only)"); return True
+                print("  ✅ (title only - appears instantly)")
+                return True
             if os.path.exists(out): os.remove(out)
 
     print("  ❌"); return False
