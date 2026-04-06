@@ -8,28 +8,10 @@
   ],
   "publishers": [
     {
-      "name": "m4",
-      "frame_png_id": "m4_uckdpk",
-      "outro_id": "marocoutro_xafl1m",
-      "title_color": "#0c276c"
-    },
-    {
-      "name": "ici",
-      "frame_png_id": "ici_xoe3wy",
-      "outro_id": "icioutro_qnv7kc",
-      "title_color": "#162f65"
-    },
-    {
-      "name": "chouf",
-      "frame_png_id": "chouf_jbpk3p",
-      "outro_id": "choufoutro_xo1tvw",
-      "title_color": "#fe0002"
-    },
-    {
       "name": "chouf2",
-      "frame_png_id": "hibapp_ym2sxb",
-      "outro_id": "hibaoutro_xzvys5",
-      "title_color": "#3a0a0a"
+      "frame_png_id": "sport_slnw5q",
+      "outro_id": "sportoutro_fvcjis",
+      "title_color": "#c87c0c"
     }
   ]
 }
