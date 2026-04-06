@@ -264,7 +264,7 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
     shadow = (0, 0, 0, 160)
     
     hex_str  = color_hex.replace("0x", "").replace("#", "")
-bg_color = (int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16), 255)
+    bg_color = (int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16), 255)
     border_color = (255, 255, 255, 255)
     border_width = 2
     
