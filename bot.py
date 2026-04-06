@@ -1,4 +1,4 @@
-import os, json, subprocess, re, cloudinary, cloudinary.uploader, requests, time, sys
+import os, json, subprocess, re, cloudinary, cloudinary.uploader, cloudinary.api, requests, time, sys
 
 # ─── إعدادات ─────────────────────────────────────────────────
 COOKIES_FILE        = "/tmp/cookies.txt"
@@ -882,7 +882,6 @@ def upload_and_send(video_path, pub_name, video_title, post_text, source_url):
 
     # ── حذف الفيديوهات القديمة (الاحتفاظ بآخر 2 فقط) ──────────
     try:
-        import cloudinary.api
         resources = cloudinary.api.resources(
             resource_type="video",
             type="upload",
