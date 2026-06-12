@@ -405,40 +405,28 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
 
 
 # ══════════════════════════════════════════════════════════════
-#   render_overlay_worldcup — تسمية كأس العالم
+#   render_overlay_worldcup — نفس chouf2 + البلوكات للوسط
 # ══════════════════════════════════════════════════════════════
 
 def render_overlay_worldcup(title, location, date_str, visibility_badge, source_badge, color_hex, W, H):
-    from PIL import Image, ImageDraw
+    from PIL import Image, ImageDraw, ImageFilter
     import math
 
-    white        = (255, 255, 255, 255)
-    shadow       = (0,   0,   0,   160)
-    gold         = (255, 215,   0, 255)
-    green_dark   = ( 21, 128,  61, 255)   # أخضر كأس العالم
-    green_light  = ( 34, 197,  94, 220)
-    border_color = (255, 215,   0, 255)   # إطار ذهبي
-    border_width = 3
+    white  = (255, 255, 255, 255)
+    shadow = (0, 0, 0, 160)
+
+    hex_str  = color_hex.replace("0x", "").replace("#", "")
+    bg_color = (int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16), 255)
+    border_color = (255, 255, 255, 255)
+    border_width = 2
 
     font_sz  = max(28, int(W * 0.030))
     font_i   = load_font(font_sz)
     icon_sz  = int(font_sz * 0.42)
-    margin_x = int(W * 0.037)
     info_y   = int(H * 0.038)
 
     img_perm  = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw_perm = ImageDraw.Draw(img_perm)
-
-    # ── رسم الكرة (أيقونة كأس العالم) ──────────────────────────
-    def draw_soccer_ball(d, cx, cy, R, color):
-        lw = max(2, int(R * 0.12))
-        d.ellipse([cx-R, cy-R, cx+R, cy+R], outline=color, width=lw)
-        # خطوط الكرة
-        d.line([(cx, cy-R), (cx, cy+R)], fill=color, width=max(1, lw-1))
-        d.line([(cx-R, cy), (cx+R, cy)], fill=color, width=max(1, lw-1))
-        # دائرة صغيرة في المنتصف
-        r2 = max(3, int(R * 0.30))
-        d.ellipse([cx-r2, cy-r2, cx+r2, cy+r2], outline=color, width=lw)
 
     def draw_icon_location(d, cx, cy, R, color):
         lw = max(3, int(R*0.18))
@@ -475,46 +463,55 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
     padding_v = 8
     inner_gap = int(icon_sz * 0.6)
 
-    # ── مربع التاريخ (يسار) ──────────────────────────────────────
+    # حساب عرض البلوكَين
+    box_w = box_h = box_w2 = box_h2 = 0
+    tw = th = tw2 = th2 = t_offset_y = t_offset_y2 = 0
+
     if date_str:
         bb = draw_perm.textbbox((0, 0), date_str, font=font_i)
         tw = bb[2] - bb[0]; th = bb[3] - bb[1]; t_offset_y = bb[1]
-        total_inner_w = tw + inner_gap + icon_sz * 2
-        box_w = total_inner_w + 2 * padding_h
+        box_w = tw + inner_gap + icon_sz * 2 + 2 * padding_h
         box_h = max(th, icon_sz * 2) + 2 * padding_v
-        box_x = margin_x; box_y = info_y
-        # خلفية خضراء غامقة مع إطار ذهبي
-        draw_perm.rectangle([box_x, box_y, box_x+box_w, box_y+box_h], fill=green_dark)
+
+    if location:
+        bb2 = draw_perm.textbbox((0, 0), location, font=font_i)
+        tw2 = bb2[2] - bb2[0]; th2 = bb2[3] - bb2[1]; t_offset_y2 = bb2[1]
+        box_w2 = tw2 + inner_gap + icon_sz * 2 + 2 * padding_h
+        box_h2 = max(th2, icon_sz * 2) + 2 * padding_v
+
+    # توسيط البلوكَين معاً
+    gap_between = int(W * 0.04)
+    total_blocks_w = box_w + (gap_between if (date_str and location) else 0) + box_w2
+    start_x = (W - total_blocks_w) // 2
+
+    # رسم بلوك التاريخ
+    if date_str:
+        box_x = start_x; box_y = info_y
         draw_perm.rectangle([box_x, box_y, box_x+box_w, box_y+box_h],
                             outline=border_color, width=border_width)
         text_y = box_y + (box_h - th) // 2 - t_offset_y
         text_x = box_x + padding_h
         draw_perm.text((text_x+2, text_y+2), date_str, font=font_i, fill=shadow)
-        draw_perm.text((text_x,   text_y),   date_str, font=font_i, fill=gold)
+        draw_perm.text((text_x,   text_y),   date_str, font=font_i, fill=white)
         ic_cx = text_x + tw + inner_gap + icon_sz
         ic_cy = box_y + box_h // 2
-        draw_icon_calendar(draw_perm, ic_cx, ic_cy, icon_sz, gold)
+        draw_icon_calendar(draw_perm, ic_cx, ic_cy, icon_sz, white)
 
-    # ── مربع المكان (يمين) ──────────────────────────────────────
+    # رسم بلوك المكان
     if location:
-        bb2 = draw_perm.textbbox((0, 0), location, font=font_i)
-        tw2 = bb2[2] - bb2[0]; th2 = bb2[3] - bb2[1]; t_offset_y2 = bb2[1]
-        total_inner_w2 = tw2 + inner_gap + icon_sz * 2
-        box_w2 = total_inner_w2 + 2 * padding_h
-        box_h2 = max(th2, icon_sz * 2) + 2 * padding_v
-        box_x2 = W - margin_x - box_w2; box_y2 = info_y
-        draw_perm.rectangle([box_x2, box_y2, box_x2+box_w2, box_y2+box_h2], fill=green_dark)
+        box_x2 = start_x + box_w + (gap_between if date_str else 0)
+        box_y2 = info_y
         draw_perm.rectangle([box_x2, box_y2, box_x2+box_w2, box_y2+box_h2],
                             outline=border_color, width=border_width)
         text_y2 = box_y2 + (box_h2 - th2) // 2 - t_offset_y2
         text_x2 = box_x2 + padding_h
         draw_perm.text((text_x2+2, text_y2+2), location, font=font_i, fill=shadow)
-        draw_perm.text((text_x2,   text_y2),   location, font=font_i, fill=gold)
+        draw_perm.text((text_x2,   text_y2),   location, font=font_i, fill=white)
         ic_cx2 = text_x2 + tw2 + inner_gap + icon_sz
         ic_cy2 = box_y2 + box_h2 // 2
-        draw_icon_location(draw_perm, ic_cx2, ic_cy2, icon_sz, gold)
+        draw_icon_location(draw_perm, ic_cx2, ic_cy2, icon_sz, white)
 
-    # ── شارة المصدر (جانب الشاشة) ──────────────────────────────
+    # شارة المصدر (جانب الشاشة)
     if source_badge:
         badge_sz = max(26, int(W * 0.030))
         font_b   = load_font(badge_sz)
@@ -523,11 +520,11 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
         tmp      = Image.new("RGBA", (bw + margin*2, bh + margin*2), (0, 0, 0, 0))
         td       = ImageDraw.Draw(tmp)
         td.text((margin+1, margin+1), source_badge, font=font_b, fill=shadow)
-        td.text((margin,   margin),   source_badge, font=font_b, fill=gold)
+        td.text((margin,   margin),   source_badge, font=font_b, fill=white)
         rotated  = tmp.rotate(90, expand=True)
         img_perm.paste(rotated, (25, (H - rotated.height) // 2), rotated)
 
-    # ── شارة الرؤية (visibility) في الأسفل — أخضر + ذهبي ─────
+    # شارة الرؤية في الأسفل
     if visibility_badge:
         visibility_font = load_font(max(28, int(W * 0.032)))
         vw, vh = get_tw(draw_perm, visibility_badge, visibility_font)
@@ -536,18 +533,10 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
         v_y = H - vh - int(H * 0.12)
         rect_coords = [v_x - bg_padding, v_y - bg_padding//2,
                        v_x + vw + bg_padding, v_y + vh + bg_padding//2]
-        draw_perm.rectangle(rect_coords, fill=green_dark)
+        draw_perm.rectangle(rect_coords, fill=bg_color)
         draw_perm.rectangle(rect_coords, outline=border_color, width=border_width)
         draw_perm.text((v_x+2, v_y+2), visibility_badge, font=visibility_font, fill=shadow)
-        draw_perm.text((v_x,   v_y),   visibility_badge, font=visibility_font, fill=gold)
-
-        # ── كرة القدم بجانب شارة الرؤية ─────────────────────────
-        ball_r = int(vh * 0.55)
-        ball_cx = rect_coords[0] - ball_r - int(W * 0.012)
-        ball_cy = (rect_coords[1] + rect_coords[3]) // 2
-        draw_soccer_ball(draw_perm, ball_cx, ball_cy, ball_r, gold)
-        ball_cx2 = rect_coords[2] + ball_r + int(W * 0.012)
-        draw_soccer_ball(draw_perm, ball_cx2, ball_cy, ball_r, gold)
+        draw_perm.text((v_x,   v_y),   visibility_badge, font=visibility_font, fill=white)
 
     img_perm.save("/tmp/overlay_permanent.png", "PNG")
     print("✅ overlay_permanent.png (worldcup)")
@@ -575,16 +564,12 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
             bar_y = H - bar_h - vh - int(H * 0.12) - v_margin
         else:
             bar_y = H - bar_h - int(H * 0.12)
-        # خلفية خضراء مع إطار ذهبي للعنوان
-        draw_title.rectangle([bar_x, bar_y, bar_x+bar_w, bar_y+bar_h], fill=green_dark)
-        draw_title.rectangle([bar_x, bar_y, bar_x+bar_w, bar_y+bar_h],
-                             outline=border_color, width=border_width)
+        draw_title.rectangle([bar_x, bar_y, bar_x+bar_w, bar_y+bar_h], fill=bg_color)
         for i, line in enumerate(lines):
             lw, _ = get_tw(draw_title, line, font_t)
             tx = bar_x + (bar_w - lw) // 2
             ty = bar_y + bar_pad_v + i * line_h
-            draw_title.text((tx+2, ty+2), line, font=font_t, fill=shadow)
-            draw_title.text((tx,   ty),   line, font=font_t, fill=gold)
+            draw_title.text((tx, ty), line, font=font_t, fill=white)
 
     if title:
         img_title.save("/tmp/overlay_title.png", "PNG")
