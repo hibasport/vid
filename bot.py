@@ -468,13 +468,19 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
     padding_v = 8
     inner_gap = int(icon_sz * 0.6)
 
-    # التاريخ يسار
+    # التاريخ يسار مع إزاحة إلى اليمين
     if date_str:
         bb = draw_perm.textbbox((0, 0), date_str, font=font_i)
         tw = bb[2] - bb[0]; th = bb[3] - bb[1]; t_offset_y = bb[1]
         box_w = tw + inner_gap + icon_sz * 2 + 2 * padding_h
         box_h = max(th, icon_sz * 2) + 2 * padding_v
-        box_x = margin_x; box_y = info_y
+        
+        # إزاحة التاريخ إلى اليمين - غيّر هذه القيمة حسب رغبتك
+        # 0 = الوضع الأصلي (على الحافة), 20 = إزاحة معتدلة, 40 = إزاحة أكبر
+        date_offset = 25  # <--- غيّر هذا الرقم للتحكم بمقدار الإزاحة إلى اليمين
+        
+        box_x = margin_x + date_offset
+        box_y = info_y
         draw_perm.rectangle([box_x, box_y, box_x+box_w, box_y+box_h],
                             outline=border_color, width=border_width)
         text_y = box_y + (box_h - th) // 2 - t_offset_y
