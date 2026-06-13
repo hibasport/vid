@@ -477,7 +477,7 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
         
         # إزاحة التاريخ إلى اليمين - غيّر هذه القيمة حسب رغبتك
         # 0 = الوضع الأصلي (على الحافة), 20 = إزاحة معتدلة, 40 = إزاحة أكبر
-        date_offset = 40  # <--- غيّر هذا الرقم للتحكم بمقدار الإزاحة إلى اليمين
+        date_offset = 50  # <--- غيّر هذا الرقم للتحكم بمقدار الإزاحة إلى اليمين
         
         box_x = margin_x + date_offset
         box_y = info_y
