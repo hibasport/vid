@@ -408,6 +408,10 @@ def render_overlay_chouf2(title, location, date_str, visibility_badge, source_ba
 #   render_overlay_worldcup — نفس chouf2 + البلوكات للوسط
 # ══════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════
+#   render_overlay_worldcup — نفس chouf2 تماماً
+# ══════════════════════════════════════════════════════════════
+
 def render_overlay_worldcup(title, location, date_str, visibility_badge, source_badge, color_hex, W, H):
     from PIL import Image, ImageDraw, ImageFilter
     import math
@@ -423,7 +427,8 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
     font_sz  = max(28, int(W * 0.030))
     font_i   = load_font(font_sz)
     icon_sz  = int(font_sz * 0.42)
-    info_y   = int(H * 0.09)  # ↓ نزّلنا البلوكات تحت شعار هبة
+    margin_x = int(W * 0.037)
+    info_y   = int(H * 0.038)
 
     img_perm  = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw_perm = ImageDraw.Draw(img_perm)
@@ -463,30 +468,13 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
     padding_v = 8
     inner_gap = int(icon_sz * 0.6)
 
-    # حساب عرض البلوكَين
-    box_w = box_h = box_w2 = box_h2 = 0
-    tw = th = tw2 = th2 = t_offset_y = t_offset_y2 = 0
-
+    # التاريخ يسار
     if date_str:
         bb = draw_perm.textbbox((0, 0), date_str, font=font_i)
         tw = bb[2] - bb[0]; th = bb[3] - bb[1]; t_offset_y = bb[1]
         box_w = tw + inner_gap + icon_sz * 2 + 2 * padding_h
         box_h = max(th, icon_sz * 2) + 2 * padding_v
-
-    if location:
-        bb2 = draw_perm.textbbox((0, 0), location, font=font_i)
-        tw2 = bb2[2] - bb2[0]; th2 = bb2[3] - bb2[1]; t_offset_y2 = bb2[1]
-        box_w2 = tw2 + inner_gap + icon_sz * 2 + 2 * padding_h
-        box_h2 = max(th2, icon_sz * 2) + 2 * padding_v
-
-    # توسيط البلوكَين معاً
-    gap_between = int(W * 0.04)
-    total_blocks_w = box_w + (gap_between if (date_str and location) else 0) + box_w2
-    start_x = (W - total_blocks_w) // 2
-
-    # رسم بلوك التاريخ
-    if date_str:
-        box_x = start_x; box_y = info_y
+        box_x = margin_x; box_y = info_y
         draw_perm.rectangle([box_x, box_y, box_x+box_w, box_y+box_h],
                             outline=border_color, width=border_width)
         text_y = box_y + (box_h - th) // 2 - t_offset_y
@@ -497,10 +485,13 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
         ic_cy = box_y + box_h // 2
         draw_icon_calendar(draw_perm, ic_cx, ic_cy, icon_sz, white)
 
-    # رسم بلوك المكان
+    # المكان يمين
     if location:
-        box_x2 = start_x + box_w + (gap_between if date_str else 0)
-        box_y2 = info_y
+        bb2 = draw_perm.textbbox((0, 0), location, font=font_i)
+        tw2 = bb2[2] - bb2[0]; th2 = bb2[3] - bb2[1]; t_offset_y2 = bb2[1]
+        box_w2 = tw2 + inner_gap + icon_sz * 2 + 2 * padding_h
+        box_h2 = max(th2, icon_sz * 2) + 2 * padding_v
+        box_x2 = W - margin_x - box_w2; box_y2 = info_y
         draw_perm.rectangle([box_x2, box_y2, box_x2+box_w2, box_y2+box_h2],
                             outline=border_color, width=border_width)
         text_y2 = box_y2 + (box_h2 - th2) // 2 - t_offset_y2
@@ -511,7 +502,6 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
         ic_cy2 = box_y2 + box_h2 // 2
         draw_icon_location(draw_perm, ic_cx2, ic_cy2, icon_sz, white)
 
-    # شارة المصدر (جانب الشاشة)
     if source_badge:
         badge_sz = max(26, int(W * 0.030))
         font_b   = load_font(badge_sz)
@@ -524,7 +514,6 @@ def render_overlay_worldcup(title, location, date_str, visibility_badge, source_
         rotated  = tmp.rotate(90, expand=True)
         img_perm.paste(rotated, (25, (H - rotated.height) // 2), rotated)
 
-    # شارة الرؤية في الأسفل
     if visibility_badge:
         visibility_font = load_font(max(28, int(W * 0.032)))
         vw, vh = get_tw(draw_perm, visibility_badge, visibility_font)
