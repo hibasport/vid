@@ -57,9 +57,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    # ✅ حماية: لا يُشغَّل إلا من حساب المالك فقط
-    if: github.actor == 'alnaharcontact-ops'
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
