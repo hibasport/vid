@@ -21,12 +21,13 @@ VIDEO_LOCATION    = os.environ.get("VIDEO_LOCATION",     "").strip()
 VIDEO_DATE        = os.environ.get("VIDEO_DATE",         "").strip()
 VIDEO_VISIBILITY  = os.environ.get("VIDEO_VISIBILITY",   "متداول").strip()
 VIDEO_SOURCE      = os.environ.get("VIDEO_SOURCE",       "").strip()
+VIDEO_YOUTUBE     = os.environ.get("VIDEO_YOUTUBE",      "false").strip().lower() == "true"
 
 # ── نص الـ badge ──────────────────────────────────────────────
 SOURCE_BADGE = f"@{VIDEO_SOURCE}" if VIDEO_SOURCE else ""
 VISIBILITY_BADGE = VIDEO_VISIBILITY  # متداول أو خاص
 
-print(f"👤 {VIDEO_PUBLISHER} | 📍 {VIDEO_LOCATION or '—'} | 📅 {VIDEO_DATE or '—'} | 🔒 {VISIBILITY_BADGE} | 📌 {SOURCE_BADGE}")
+print(f"👤 {VIDEO_PUBLISHER} | 📍 {VIDEO_LOCATION or '—'} | 📅 {VIDEO_DATE or '—'} | 🔒 {VISIBILITY_BADGE} | 📌 {SOURCE_BADGE} | 📺 يوتيوب: {'نعم' if VIDEO_YOUTUBE else 'لا'}")
 if VIDEO_POST_TEXT:
     print(f"📝 نص المنشور: {VIDEO_POST_TEXT[:80]}{'...' if len(VIDEO_POST_TEXT)>80 else ''}")
 
@@ -1036,7 +1037,7 @@ def compress_for_upload(src, out, max_mb=95):
     return src
 
 
-def upload_and_send(video_path, pub_name, video_title, post_text, source_url):
+def upload_and_send(video_path, pub_name, video_title, post_text, source_url, publish_youtube=False):
     """رفع الفيديو ثم إرسال الـ Webhook مع نص المنشور المنفصل عن العنوان"""
     video_path = compress_for_upload(video_path, video_path.replace(".mp4", "_cmp.mp4"))
     mb = os.path.getsize(video_path) / 1024 / 1024
@@ -1099,6 +1100,7 @@ def upload_and_send(video_path, pub_name, video_title, post_text, source_url):
         "post_text":   final_post_text,
         "publisher":   pub_name,
         "source_url":  source_url,
+        "youtube":     publish_youtube,
     }, timeout=30)
     print(f"  📡 Webhook أُرسل → {pub_name}")
 
@@ -1232,7 +1234,7 @@ for pub in target_pubs:
             current = final_out
 
     try:
-        upload_and_send(current, name, video_title, VIDEO_POST_TEXT, video_url)
+        upload_and_send(current, name, video_title, VIDEO_POST_TEXT, video_url, VIDEO_YOUTUBE)
         success += 1
         print(f"  🎉 {name} نُشر بنجاح")
     except Exception as e:
