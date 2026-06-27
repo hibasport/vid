@@ -14,7 +14,7 @@ on:
         default: ''
         type: string
       post_text:
-        description: '📝 نص المنشور (يُرسل مع الويبهوك — يقبل هاشتاغات وإشارات)'
+        description: '📝 نص المنشور (يُرسل مع الويبهوك)'
         required: false
         default: ''
         type: string
@@ -29,7 +29,7 @@ on:
         default: ''
         type: string
       source:
-        description: '🔍 مصدر الفيديو (يظهر بجانب نوع الفيديو: متداول - @المصدر)'
+        description: '🔍 مصدر الفيديو'
         required: false
         default: ''
         type: string
@@ -46,11 +46,19 @@ on:
         required: false
         default: 'ALL'
         type: string
+      youtube:
+        description: '📺 نشر على يوتيوب أيضاً'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   process-video:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    # ✅ حماية: لا يُشغَّل إلا من حساب المالك فقط
+    if: github.actor == 'alnaharcontact-ops'
 
     steps:
       - name: Checkout
@@ -92,8 +100,11 @@ jobs:
           VIDEO_SOURCE:          ${{ github.event.inputs.source }}
           VIDEO_VISIBILITY:      ${{ github.event.inputs.visibility }}
           VIDEO_PUBLISHER:       ${{ github.event.inputs.publisher }}
+          VIDEO_YOUTUBE:         ${{ github.event.inputs.youtube }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           WEBHOOK_URL:           ${{ secrets.WEBHOOK_URL }}
+          PANEL_CALLBACK_URL:    ${{ secrets.PANEL_CALLBACK_URL }}
+          PANEL_SECRET:          ${{ secrets.PANEL_SECRET }}
         run: python bot.py
