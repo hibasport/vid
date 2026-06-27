@@ -46,6 +46,11 @@ on:
         required: false
         default: 'ALL'
         type: string
+      youtube:
+        description: '📺 نشر على يوتيوب أيضاً'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   process-video:
@@ -95,6 +100,7 @@ jobs:
           VIDEO_SOURCE:          ${{ github.event.inputs.source }}
           VIDEO_VISIBILITY:      ${{ github.event.inputs.visibility }}
           VIDEO_PUBLISHER:       ${{ github.event.inputs.publisher }}
+          VIDEO_YOUTUBE:         ${{ github.event.inputs.youtube }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
